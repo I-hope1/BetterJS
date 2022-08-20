@@ -1,0 +1,6 @@
+name: "better_js"
+description: ""
+main: "better_js.Main"
+author: "I hope..."
+version: "1.1"
+minGameVersion: 136

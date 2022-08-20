@@ -1,0 +1,63 @@
+plugins {
+	id 'java'
+	id "io.github.liplum.mgpp" version "1.1.4"
+}
+
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+group 'org.example'
+version '1.0'
+sourceSets {
+	main {
+		java.srcDirs = ["src"]
+	}
+}
+targetCompatibility = 11
+sourceCompatibility = 11
+repositories {
+	mavenCentral()
+	mindustryRepo()
+}
+
+dependencies {
+	// compileOnly files("E:/应用/Mindustry/136/Mindustry.jar")
+	compileOnly files("E:/Users/ASUS/Desktop/Mindustry136/Mindustry_android.jar")
+	importMindustry()
+}
+mindustry {
+	dependency {
+//        mindustry version: '22810'
+		// To use jitpack, https://jitpack.io/#anuken/mindustryjitpack
+		mindustryMirror version: 'v136'
+		arc version: 'v136'
+	}
+	client {
+		official version: 'v136'
+		fromLocal "E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar"
+		args += [ '-debug', '-antialias' ]
+	}
+	meta << ModMeta(
+			version: "1.0"
+	)
+	meta.displayName = "better_js"
+	def name = project.archivesBaseName
+	deploy {
+		baseName = name
+	}
+
+	run {
+		keepOtherMods
+//		setDataDefault()
+		dataDir = "E:/Users/ASUS/Desktop/Mindustry136"
+	}
+}
+mindustryAssets {
+	// Set the assets root
+	rootAt "$projectDir/assets"
+}
+test {
+	useJUnitPlatform()
+}
