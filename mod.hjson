@@ -1,5 +1,8 @@
 name: "better_js"
-description: ""
+description: '''
+1. 优化js的运行效率
+2. 添加一些js方法，如访问私有，方法优先（全部在$AX里）
+'''
 main: "better_js.Main"
 author: "I hope..."
 version: "1.1"
