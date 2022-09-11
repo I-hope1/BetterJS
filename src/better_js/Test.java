@@ -7,7 +7,6 @@ import better_js.reflect.*;
 import better_js.utils.*;
 import hope_android.FieldUtils;
 import interfaces.*;
-import jdk.internal.misc.SharedSecrets;
 import jdk.internal.reflect.*;
 import jdk.internal.reflect.ConstantPool.Tag;
 import jdk.internal.reflect.MethodAccessor;

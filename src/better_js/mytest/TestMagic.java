@@ -3,7 +3,6 @@ package better_js.mytest;
 import better_js.reflect.JDKVars;
 import better_js.utils.ByteCodeTools.*;
 import better_js.utils.MyReflect;
-import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.vm.annotation.ForceInline;
@@ -62,7 +61,6 @@ public class TestMagic {
 	}
 
 	public interface FuncInvoke {
-		@HotSpotIntrinsicCandidate
 		@ForceInline
 		@CallerSensitive
 		void run();
