@@ -6,6 +6,15 @@ plugins {
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.vm.annotation=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.platform=ALL-UNNAMED")
+//	options.compilerArgs.addAll("-classpath", "libs/libs.jar")
+
+//	options.compilerArgs.addAll("--add-opens", "java.base/jdk.internal.reflect=ALL-UNNAMED")
 }
 
 group 'org.example'
@@ -23,10 +32,28 @@ repositories {
 }
 
 dependencies {
-	// compileOnly files("E:/应用/Mindustry/136/Mindustry.jar")
-	compileOnly files("E:/Users/ASUS/Desktop/Mindustry136/Mindustry_android.jar")
+//	implementation "com.github.Anuken.Arc:arc-core:v136"
+//	implementation files("E:/Users/ASUS/Desktop/Mods/Rhino/build/tmp/deploy/Rhino-1.0.jar")
+
+//	implementation "com.github.EB-wilson:JavaDynamilizer:V1.4-A3"
+//	implementation files("libs/MagicAccessorImpl_PUBLIC.class")
+	compileOnly files(
+			"libs/Mindustry_android.jar",
+			"libs/libs.jar",
+			"libs/Android_dalvik-1.0.jar",
+	)
+//	implementation files("E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar")
+//	implementation "com.alipay.euler:andfix:0.5.0@aar"
+	implementation files(
+//			"libs/asm-5.1.jar",
+			"libs/AndroidField.jar"
+	)
+//	implementation files("libs/reflectasm.jar")
+
 	importMindustry()
+//	compileOnly files("assets/invokeFunc.jar")
 }
+
 mindustry {
 	dependency {
 //        mindustry version: '22810'
@@ -37,7 +64,7 @@ mindustry {
 	client {
 		official version: 'v136'
 		fromLocal "E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar"
-		args += [ '-debug', '-antialias' ]
+		args += ['-debug', '-antialias']
 	}
 	meta << ModMeta(
 			version: "1.0"
@@ -46,6 +73,9 @@ mindustry {
 	def name = project.archivesBaseName
 	deploy {
 		baseName = name
+	}
+	dexJar {
+		options.minApi = '26'
 	}
 
 	run {
