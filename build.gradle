@@ -91,3 +91,8 @@ mindustryAssets {
 test {
 	useJUnitPlatform()
 }
+task unzip(type: Copy) {
+    // 从jar的目录树中输出到目标目录
+    from zipTree("$buildDir/tmp/deploy/${project.archivesBaseName}.jar")
+    into file("$buildDir/libs/tmp")
+}
