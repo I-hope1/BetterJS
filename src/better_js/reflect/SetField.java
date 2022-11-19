@@ -3,23 +3,26 @@ package better_js.reflect;
 import better_js.utils.ByteCodeTools.MyClass;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.FieldAccessor;
-import rhino.classfile.ByteCode;
+import rhino.classfile.*;
 
 import java.lang.reflect.*;
 
-import static better_js.utils.ByteCodeTools.nativeMethod;
+import static better_js.utils.ByteCodeTools.*;
 
 public class SetField {
 	// public static final Unsafe unsafe = Unsafe.getUnsafe();
 	public static void init(MyClass<?> myFactoryClass) throws ClassNotFoundException {
 		Class<?> cls = Class.forName("jdk.internal.reflect.UnsafeFieldAccessorFactory");
-		myFactoryClass.setFunc("newFieldAccessor", cfw -> {
-			cfw.addALoad(1);
-			cfw.addPush(true);
-			cfw.addInvoke(ByteCode.INVOKESTATIC, cls.getName(), "newFieldAccessor", nativeMethod(FieldAccessor.class, Field.class, boolean.class));
-			cfw.add(ByteCode.ARETURN);
-			return 3;
-		}, Modifier.PUBLIC, FieldAccessor.class, Field.class, boolean.class);
+		ClassFileWriter cfw = myFactoryClass.writer;
+		String type = "(Ljava/lang/reflect/Field;Z)Ljdk/internal/reflect/FieldAccessor;";
+		cfw.startMethod("newFieldAccessor", type, (short) Modifier.PUBLIC);
+
+		cfw.addALoad(1);
+		cfw.addPush(true);
+		cfw.addInvoke(ByteCode.INVOKESTATIC, cls.getName(), "newFieldAccessor", type);
+		cfw.add(ByteCode.ARETURN);
+
+		cfw.stopMethod((short) 3); // this + args + var * 1
 	}
 	/*public static void init_disabled(MyClass<?> myFactoryClass) {
 		myFactoryClass.setFunc("newFieldAccessor", (self, _args) -> {

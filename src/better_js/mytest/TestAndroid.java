@@ -11,6 +11,7 @@ import hope_android.FieldUtils;
 import interfaces.InvokeFunc;
 import mindustry.Vars;
 import mindustry.android.AndroidRhinoContext.AndroidContextFactory;
+import mindustry.world.blocks.ItemSelection;
 import rhino.*;
 import rhino.classfile.*;
 
@@ -36,26 +37,62 @@ public class TestAndroid {
 		// testField();
 		// testMethod();
 		if (true) return;
+		Log.info(ItemSelection.class);
 		Tools.forceRun(() -> {
 			Log.info("======hotfix=====");
-			Fi target = Vars.mods.getMod(Main.class).root.child("MyJavaMembers-1.0.jar");
-			Fi toFile = Vars.tmpDirectory.child("AAA.jar");
+			Fi target = Vars.mods.getMod(Main.class).root.child("AAKPA.jar");
+			Fi toFile = Vars.tmpDirectory.child("padcjikzn.jar");
 			target.copyTo(toFile);
 
-			ClassLoader pathLoader = Context.class.getClassLoader();
-			// var base = new BaseDexClassLoader(toFile.path(), null, null, pathLoader.getParent());
-			try {
-				VMRuntime.registerAppInfo(Vars.tmpDirectory.child("APAPPA").path(), new String[]{toFile.path()});
-			} catch (Throwable e) {
-				Log.err(e);
-			}
+			ClassLoader pathLoader = Vars.class.getClassLoader();
+			/*Log.info(pathLoader);
+			Log.info(pathLoader.getParent());*/
+			var base = new BaseDexClassLoader(toFile.path(), null, null, pathLoader.getParent()) {
+				private boolean inChild;
 
-			// testHotfix(pathLoader, toFile.file());
+				@Override
+				protected Class<?> findClass(String name) throws ClassNotFoundException {
+					try {
+						return super.findClass(name);
+					} catch (ClassNotFoundException e) {
+						if (inChild) throw e;
+						return findClassInChild(name);
+					}
+
+				}
+
+				public Class<?> findClassInChild(String name) throws ClassNotFoundException {
+					inChild = true;
+					try {
+						return pathLoader.loadClass(name);
+					} finally {
+						inChild = false;
+					}
+				}
+			};
 			try {
-				Class.forName("rhino.JavaMembers", true, Context.class.getClassLoader());
+				Field f = ClassLoader.class.getDeclaredField("parent");
+				f.setAccessible(true);
+				f.set(pathLoader, base);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+			// base.loadClass("mindustry.world.blocks.ItemSelection"+);
+			// Log.info(ItemSelection.class.hashCode());
+			try {
+				VMRuntime.registerAppInfo(Vars.tmpDirectory.child("dexCache").path(), new String[]{toFile.path()});
+			} catch (Throwable e) {
+				Log.err(e);
+			}
+			// ((BaseDexClassLoader)pathLoader).addDexPath(toFile.path(), true);
+
+			/*testHotfix(pathLoader, toFile.file());
+			try {
+				pathLoader.loadClass("mindustry.world.blocks.ItemSelection");
+			} catch (Throwable e){
+				throw new RuntimeException(e);
+			}*/
+			// Log.info(ItemSelection.class);
 
 			// Log.info(new JavaMembers(Vars.mods.getScripts().scope, Vars.class));
 		});
@@ -126,6 +163,7 @@ public class TestAndroid {
 
 	public static void aMethod() {
 	}
+
 	public static void bMethod() {
 	}
 

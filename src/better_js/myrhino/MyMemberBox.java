@@ -1,9 +1,15 @@
 package better_js.myrhino;
 
+import arc.util.*;
 import better_js.utils.MyMethodAccessor;
 import interfaces.InvokeFunc;
+import jdk.internal.misc.SharedSecrets;
+import jdk.internal.reflect.*;
+import mindustry.Vars;
 import rhino.*;
 
+import java.lang.invoke.*;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
 
 import static better_js.utils.MyMethodAccessor.*;
@@ -23,10 +29,14 @@ public final class MyMemberBox {
 	transient boolean vararg;
 	private InvokeFunc invokeFunc;
 
+	ConstructorAccessor cac;
+	MethodAccessor mac;
+
 	public InvokeFunc initFunc(Method method) {
-		final int[] times = {0};
-		return (obj, args) -> {
-			if (++times[0] > inflationThreshold && !lastGenerated) {
+		if (mac != null) return mac::invoke;
+		return method::invoke;
+		// final int[] times = {0};
+		/*if (++times[0] > inflationThreshold && !lastGenerated) {
 				invokeFunc = MyMethodAccessor.generateMethod(method);
 				// Log.info("ok");
 				lastGenerated = true;
@@ -34,8 +44,7 @@ public final class MyMemberBox {
 				--times[0];
 				lastGenerated = false;
 			}
-			return method.invoke(obj, args);
-		};
+			return method.invoke(obj, args);*/
 	}
 
 	/*static ObjectMap<Class<?>, ConstructorAccess<?>> constructorCaches = new ObjectMap<>();
@@ -55,6 +64,12 @@ public final class MyMemberBox {
 		};
 	}*/
 
+	static final ReflectionFactory factory;
+
+	static {
+		factory = Vars.mobile ? null :
+				ReflectionFactory.getReflectionFactory();
+	}
 
 	public MyMemberBox(Method method) {
 		init(method);
@@ -68,12 +83,24 @@ public final class MyMemberBox {
 		this.memberObject = method;
 		this.argTypes = method.getParameterTypes();
 		this.vararg = method.isVarArgs();
+		if (!Vars.mobile) {
+			mac = factory.getMethodAccessor(method);
+			if (mac == null) {
+				mac = factory.newMethodAccessor(method);
+			}
+		}
 	}
 
 	private void init(Constructor<?> constructor) {
 		this.memberObject = constructor;
 		this.argTypes = constructor.getParameterTypes();
 		this.vararg = constructor.isVarArgs();
+		if (!Vars.mobile) {
+			cac = factory.getConstructorAccessor(constructor);
+			if (cac == null) {
+				cac = factory.newConstructorAccessor(constructor);
+			}
+		}
 	}
 
 	Method method() {
@@ -140,15 +167,7 @@ public final class MyMemberBox {
 	public Object invoke(Object target, Object[] args) {
 		if (invokeFunc == null) invokeFunc = initFunc(method());
 		try {
-			try {
-				return invokeFunc.invoke_2rp0dmwi2la(target, args);
-				// return method().invoke(target, args);
-			} catch (Error ex) {
-				Method method = method();
-				if (!method.isAccessible()) method.setAccessible(true);
-				// Retry after recovery
-				return method.invoke(target, args);
-			}
+			return invokeFunc.invoke_2rp0dmwi2la(target, args);
 		} catch (InvocationTargetException ite) {
 			// Must allow ContinuationPending exceptions to propagate unhindered
 			Throwable e = ite;
@@ -166,16 +185,10 @@ public final class MyMemberBox {
 	Object newInstance(Object[] args) {
 		Constructor<?> ctor = ctor();
 		try {
-			try {
-				return ctor.newInstance(args);
-			} catch (IllegalAccessException ex) {
-				if (!ctor.isAccessible()) ctor.setAccessible(true);
-			}
+			if (cac != null) return cac.newInstance(args);
 			return ctor.newInstance(args);
-		} catch (Exception ex) {
+		} catch (Throwable ex) {
 			throw Context.throwAsScriptRuntimeEx(ex);
 		}
 	}
-
 }
-

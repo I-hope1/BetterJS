@@ -1,6 +1,7 @@
 package better_js.myrhino;
 
 import arc.util.Log;
+import mindustry.mod.Mods;
 import rhino.*;
 
 import java.lang.reflect.*;

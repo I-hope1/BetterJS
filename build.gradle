@@ -30,6 +30,7 @@ repositories {
 	mavenCentral()
 	mindustryRepo()
 }
+def VERSION = "1.2.1"
 
 dependencies {
 //	implementation "com.github.Anuken.Arc:arc-core:v136"
@@ -43,11 +44,11 @@ dependencies {
 			"libs/Android_dalvik-1.0.jar",
 	)
 //	implementation files("E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar")
-//	implementation "com.alipay.euler:andfix:0.5.0@aar"
+//	implementation "com.a1lipay.euler:andfix:0.5.0@aar"
 	implementation files(
-//			"libs/asm-5.1.jar",
 			"libs/AndroidField.jar"
 	)
+//	compileOnly files("E:/Program Files/AndroidStudio/sdk/platforms/android-32/android.jar")
 //	implementation files("libs/reflectasm.jar")
 
 	importMindustry()
@@ -58,16 +59,11 @@ mindustry {
 	dependency {
 //        mindustry version: '22810'
 		// To use jitpack, https://jitpack.io/#anuken/mindustryjitpack
-		mindustryMirror version: 'v136'
-		arc version: 'v136'
-	}
-	client {
-		official version: 'v136'
-		fromLocal "E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar"
-		args += ['-debug', '-antialias']
+		mindustry version: 'v139'
+		arc version: 'v140'
 	}
 	meta << ModMeta(
-			version: "1.0"
+			version: VERSION
 	)
 	meta.displayName = "better_js"
 	def name = project.archivesBaseName
@@ -79,20 +75,17 @@ mindustry {
 	}
 
 	run {
+//		if (true) throw new RuntimeException()
 		keepOtherMods
 //		setDataDefault()
-		dataDir = "E:/Users/ASUS/Desktop/Mindustry136"
 	}
 }
+
 mindustryAssets {
 	// Set the assets root
 	rootAt "$projectDir/assets"
 }
+
 test {
 	useJUnitPlatform()
-}
-task unzip(type: Copy) {
-    // 从jar的目录树中输出到目标目录
-    from zipTree("$buildDir/tmp/deploy/${project.archivesBaseName}.jar")
-    into file("$buildDir/libs/tmp")
 }

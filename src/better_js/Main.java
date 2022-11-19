@@ -3,13 +3,14 @@ package better_js;
 import arc.util.*;
 import arc.util.serialization.Json;
 import better_js.myrhino.*;
+import better_js.myrhino.MyJavaMembers;
 import better_js.mytest.TestAndroid;
 import better_js.utils.*;
 import dalvik.system.*;
 import mindustry.Vars;
 import mindustry.mod.*;
 import rhino.*;
-import rhino.classfile.ClassFileWriter;
+import rhino.classfile.*;
 import sun.misc.Unsafe;
 import sun.reflect.ReflectionFactory;
 
@@ -18,7 +19,7 @@ import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static rhino.BetterJSRhino.*;
+import static better_js.BetterJSRhino.*;
 
 public class Main extends Mod {
 	// public static Scripts scripts;
@@ -34,9 +35,8 @@ public class Main extends Mod {
 		}
 
 		if (!Vars.mobile) {
-			Field moduleF;
 			try {
-				moduleF = Class.class.getDeclaredField("module");
+				Field moduleF = Class.class.getDeclaredField("module");
 				// 设置模块，使 JavaMembers 可以 setAccessible。
 				// 参阅java.lang.reflect.AccessibleObject#checkCanSetAccessible(java.lang.Class<?>,
 				// java.lang.Class<?>, boolean)
@@ -44,15 +44,14 @@ public class Main extends Mod {
 				Module java_base = Object.class.getModule();
 				unsafe.putObject(ForRhino.class, off, java_base);
 				unsafe.putObject(MyMemberBox.class, off, java_base);
+				unsafe.putObject(MyJavaMembers.class, off, java_base);
 				unsafe.putObject(MyReflect.class, off, java_base);
 				unsafe.putObject(Class.forName("rhino.JavaMembers"), off, java_base);
 				unsafe.putObject(Class.forName("rhino.VMBridge"), off, java_base);
 				// 使json更快
 				unsafe.putObject(Json.class, off, java_base);
 				unsafe.putObject(Reflect.class, off, java_base);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			} catch (Exception ignored) {}
 		}
 	}
 
@@ -126,57 +125,13 @@ public class Main extends Mod {
 		});
 
 		clearReflectionFilter();
-		if (Vars.mobile) {
-			TestAndroid.main(new String[0]);
-			Field f = Class.class.getDeclaredField("accessFlags");
-			f.setAccessible(true);
-			int flags = f.getInt(ATest.class);
-			flags &= 0xFFFF;
-			flags &= ~Modifier.FINAL;
-			flags &= ~Modifier.PRIVATE;
-			flags |= Modifier.PUBLIC;
-			f.setInt(ATest.class, flags & 0xFFFF);
-			String name = ATest.class.getName() + "$1";
-
-			ClassFileWriter cfw = new ClassFileWriter(name, ATest.class.getName(),
-					"<adapter>");
-			VMRuntime.getRuntime().startJitCompilation();
-
-			/*Tools.forceRun(() -> {
-				if (Vars.mods.getMod(Main.class) == null) throw new RuntimeException();
-				Fi target = Vars.mods.getMod(Main.class).root.child("invokeFunc.jar");
-				Fi toFile = Vars.tmpDirectory.child("invokeFunc.jar");
-				target.copyTo(toFile);
-				try {
-					ClassLoader loader = Vars.platform.loadJar(toFile, loader);
-					Class.forName(, true, loader);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-								BaseDexClassLoader loader = (BaseDexClassLoader) Context.class.getClassLoader();
-
-				// loader.addDexPath(toFile.path(), true);
-			});*/
-			Time.runTask(0, () -> {
-				Class<?> cls = Vars.mods.getScripts().context.createClassLoader(ATest.class.getClassLoader())
-						.defineClass(name, cfw.toByteArray());
-				try {
-					Log.info(unsafe.allocateInstance(cls));
-				} catch (InstantiationException e) {
-					throw new RuntimeException(e);
-				}
-				/*Vars.mods.getScripts().context.createClassLoader(JavaMembersClass.getClassLoader()).defineClass("rhino.MyJavaMembers", Bytecodes.javaMembers);*/
-			});
-		} else {
+		if (!Vars.mobile) {
 			try {
 				Test.main(new String[]{});
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
 		}
-	}
-
-	private static final class ATest {
 	}
 
 	/*
@@ -259,6 +214,7 @@ public class Main extends Mod {
 			return false;
 		}
 	}
+
 
 	static void clearReflectionFilter() throws Throwable {
 		if (Vars.mobile) {

@@ -1,22 +1,15 @@
 package better_js;
 
 import apzmagic.MAGICIMPL;
-import arc.files.Fi;
-import arc.util.Time;
 import better_js.reflect.*;
 import better_js.utils.*;
-import hope_android.FieldUtils;
-import interfaces.*;
+import interfaces.AO_MyInterface;
 import jdk.internal.reflect.*;
 import jdk.internal.reflect.ConstantPool.Tag;
-import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect1.Func2;
-import jdk.internal.vm.annotation.ForceInline;
-import mindustry.mod.Mod;
-import rhino.classfile.*;
+import rhino.classfile.ByteCode;
 import sun.misc.Unsafe;
 
-import java.io.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
@@ -24,10 +17,13 @@ import java.util.*;
 
 import static better_js.utils.ByteCodeTools.*;
 
+/**
+ * only for window
+ **/
 public class Test {
 	public static final Unsafe unsafe;
 	public static final Lookup lookup;
-	public static final MethodHandle mh;
+	// public static final MethodHandle mh;
 
 	static {
 		try {
@@ -41,7 +37,7 @@ public class Test {
 			_lookup = (Lookup) _lookup.findStaticGetter(Lookup.class, "IMPL_LOOKUP", Lookup.class).invoke();
 			lookup = _lookup;*/
 			lookup = (Lookup) unsafe.getObject(Lookup.class, unsafe.staticFieldOffset(Lookup.class.getDeclaredField("IMPL_LOOKUP")));
-			mh = lookup.unreflectSetter(Test2.class.getDeclaredField("IAAA"));
+			// mh = lookup.unreflectSetter(Test2.class.getDeclaredField("IAAA"));
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
@@ -57,7 +53,7 @@ public class Test {
 		}
 	}
 
-	public static void main(String[] args) throws Throwable {
+	public static void main(String[] ___) throws Throwable {
 		((Map) lookup.findStaticGetter(reflect, "fieldFilterMap", Map.class)
 				.invokeExact()).clear();
 		((Map) lookup.findStaticGetter(reflect, "methodFilterMap", Map.class)
@@ -70,6 +66,7 @@ public class Test {
 		m.invoke(java_base, "jdk.internal.reflect");
 		m.invoke(java_base, "jdk.internal.misc");
 		m.invoke(java_base, "jdk.internal.platform");
+		// m.invoke(java_base, "jdk.internal.access");
 		/*m = Module.class.getDeclaredMethod("implAddExports", String.class);
 		m.setAccessible(true);
 		m.invoke(java_base, "jdk.internal.reflect");
@@ -119,64 +116,24 @@ public class Test {
 		var interfaceObj = defineInterfaceClass();
 		defineReflectionFactory(interfaceObj);
 
-		// TestMagic.init();
-		// print(TestMagic.MagicAccessorImpl.getProtectionDomain());
-		/*Method method = Test2.class.getDeclaredMethod("aaa");
-		MethodAccessor acc = ReflectionFactory.getReflectionFactory().newMethodAccessor(method);
-		Object[] arr = new Object[]{};
-		Test2 test2 = new Test2();
-		Time.mark();
-		for (int i = 0; i < 1E7; i++) {
-			method.invoke(test2, arr);
-			// acc.invoke(test2, arr);
-			// test2.aaa();
-		}
-		print(Time.elapsed());*/
+		/*ConstantPool pool = SharedSecrets.getJavaLangAccess().getConstantPool(ModsDialog.class);
+		String prefix = "https://raw.githubusercontent.com";
 
-		/*lookup.findSetter(Module.class, "name", String.class)
-				.invoke(Object.class.getModule(), null);*/
+		String s;
+		for (int i = 0, size = pool.getSize(); i < size; i++) {
+			if (pool.getTagAt(i) == Tag.UTF8) {
+				s = pool.getUTF8At(i);
+				if (s.startsWith(prefix)) {
+					// Log.info(s);
+					long off = JDKVars.unsafe.objectFieldOffset(String.class, "value");
+					unsafe.putObject(s, off, unsafe.getObject(s.replace(prefix, "https://raw.staticdn.net"), off));
+				}
+				if (s.startsWith("https"))Log.info(s);
+			}
+		}*/
 
-		// TestMagic.init();
 
-		/*Method method = Test2.class.getDeclaredMethod("aaa");
-		MethodAccessor mac = ReflectionFactory.getReflectionFactory().newMethodAccessor(method);
-		Test2 test2 = new Test2();
-		int pre_times = 1_0000;
-		final Object[] EMPTY = {};
-		for (int i = 0; i < pre_times; i++) {
-			mh.invoke(test2);
-			// test2.aaa();
-			// mac.invoke(test2, EMPTY);
-		}
-		int times = 1_0000_0000;
-		long lastTime = System.nanoTime();
-		for (int i = 0; i < times; i++) {
-			// mac.invoke(test2, EMPTY);
-			// test2.aaa();
-			mh.invoke(test2);
-		}
-		print((System.nanoTime() - lastTime) / (float) times);*/
-		/*lastTime = System.nanoTime();
-		for (int i = 0; i < times; i++) {
-			mac.invoke(test2, EMPTY);
-			// test2.aaa();
-			// mh.invoke(test2);
-		}
-		print((System.nanoTime() - lastTime) / (float) times);*/
-		/*final Field field = Test2.class.getDeclaredField("iaaa");
-		field.setAccessible(true);
-		Test2 test2 = new Test2();
-		int pre_times = 10_0000;
-		for (int i = 0; i < pre_times; i++) {
-			field.setInt(test2, i);
-		}
-		int times = 100_0000;
-		long lastTime = System.nanoTime();
-		for (int i = 0; i < times; i++) {
-			field.setInt(test2, i);
-		}
-		print((System.nanoTime() - lastTime) / (float) times);*/
-
+		// print(TestGetCaller.class.getSuperclass().getSuperclass().getSuperclass());
 	}
 
 	/**
@@ -251,17 +208,15 @@ public class Test {
 			return cons;
 		}, Modifier.PUBLIC, Constructor.class, Constructor.class);
 		myFactoryClass.setFunc("<init>", (Func2) null, Modifier.PUBLIC, void.class);
-		// ObjectMap<Class<?>, ObjectMap<Method, MethodAccessor>> classObjectMapObjectMap = new ObjectMap<>();
+
 		// SetMethod.init(myFactoryClass);
 		SetField.init(myFactoryClass);
 
 		/*lookup.findSetter(ClassLoader.class, "parent", ClassLoader.class)
 				.invoke(factory.getClassLoader(), Test.class.getClassLoader());*/
-		// Class<?> cls = ;
 		Object ins = unsafe.allocateInstance(myFactoryClass.define());
 
 
-		// print(cls);
 		/*byte[] bytes = myFactoryClass.writer.toByteArray();
 		Object ins = unsafe.allocateInstance(SetField.unsafe.defineClass0(null, bytes, 0, bytes.length, MyReflect.IMPL_LOADER, null));*/
 
@@ -279,7 +234,7 @@ public class Test {
 
 		// print(MyReflect.class.getDeclaredFields());
 
-		/*ConstantPool pool = SharedSecrets.getJavaLangAccess().getConstantPool(Func2.class);
+		/*ConstantPool pool = SharedSecrets.getJavaLangAccess().getConstantPool(Void.class);
 		StringBuilder builder = new StringBuilder();
 		Object o;
 		for (int i = 0, size = pool.getSize(); i < size; i++) {
@@ -320,7 +275,7 @@ public class Test {
 
 			// return pool.getClassAt(i);
 			case INVOKEDYNAMIC:
-				return pool.getNameAndTypeRefInfoAt(pool.getNameAndTypeRefIndexAt(i));
+				return "";
 			// return Arrays.toString(pool.getNameAndTypeRefInfoAt(i));
 			case INVALID:
 				return "";
@@ -411,6 +366,7 @@ public class Test {
 		}
 	}*/
 
+	@Deprecated
 	public static final class MyMethodAccessor implements MethodAccessor {
 		// public static final Lookup lookup = Test.lookup;
 		private final MethodHandle handle;
@@ -493,7 +449,6 @@ public class Test {
 		}
 
 		@Override
-		@ForceInline
 		public Object invoke(Object obj, Object[] args) {
 			try {
 				return func.invoke(obj, args);
@@ -504,17 +459,8 @@ public class Test {
 		}
 	}
 
-	public static class Test2 {
-		private static int IAAA = 10082820;
-
-		public void aaa() {
-		}
-	}
-
 	private interface FuncInvoke {
 		Object invoke(Object obj, Object[] args) throws Throwable;
 	}
-
-
 }
 

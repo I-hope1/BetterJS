@@ -4,15 +4,17 @@ import arc.struct.ObjectMap;
 import arc.util.Log;
 import hope_android.FieldUtils;
 import mindustry.Vars;
+import mindustry.mod.Mods;
+import mindustry.type.Category;
 import rhino.*;
 
 import java.lang.reflect.*;
 import java.util.*;
 
-import static better_js.ForRhino.enableAccess;
+import static better_js.ForRhino.*;
 import static better_js.Main.unsafe;
 import static java.lang.reflect.Modifier.*;
-import static rhino.BetterJSRhino.*;
+import static better_js.BetterJSRhino.*;
 
 /**
  * @author Mike Shaver
@@ -64,10 +66,11 @@ public class MyJavaMembers {
 			member = staticMembers.get(name);
 		}
 		if (member == null) {
-			member = this.getExplicitFunction(scope, name,
+			member = getExplicitFunction(scope, name,
 					javaObject, isStatic);
-			if (member == null)
+			if (member == null) {
 				return Scriptable.NOT_FOUND;
+			}
 		}
 		if (member instanceof Scriptable) {
 			return member;
@@ -80,8 +83,9 @@ public class MyJavaMembers {
 			if (member instanceof MyBeanProperty) {
 				MyBeanProperty bp = (MyBeanProperty) member;
 				// long last = System.nanoTime();
-				if (bp.getter == null)
+				if (bp.getter == null) {
 					return Scriptable.NOT_FOUND;
+				}
 				rval = bp.getter.invoke(javaObject, Context.emptyArgs);
 				type = bp.getter.method().getReturnType();
 				/*total2 += System.nanoTime() - last;
@@ -107,9 +111,9 @@ public class MyJavaMembers {
 		// Need to wrap the object before we return it.
 		// long last = System.nanoTime();
 		// try {
-			return cx.getWrapFactory().wrap(cx,
-					scope,
-					rval, type);
+		return cx.getWrapFactory().wrap(cx,
+				scope,
+				rval, type);
 		/*} finally {
 			if (isStatic) {
 				total += System.nanoTime() - last;
@@ -189,15 +193,21 @@ public class MyJavaMembers {
 					unsafe.putObject(isStatic ?
 									field.getDeclaringClass() : javaObject,
 							FieldUtils.getFieldOffset(field), javaValue);
-				else field.set(javaObject, javaValue);
+				else {
+					try {
+						field.set(javaObject, javaValue);
+					} catch (IllegalAccessException e) {
+						unsafe.putObject(isStatic ? field.getDeclaringClass() : javaObject,
+								isStatic ? unsafe.staticFieldOffset(field) : unsafe.objectFieldOffset(field),
+								javaValue);
+					}
+				}
 
 			} catch (IllegalArgumentException argEx) {
 				throw ErrorThrow.reportRuntimeError3(
 						"msg.java.internal.field.type",
 						value.getClass().getName(), field,
 						javaObject.getClass().getName());
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -544,7 +554,7 @@ public class MyJavaMembers {
 			boolean isStatic = (tableCursor == 0);
 			ObjectMap<String, Object> ht = isStatic ? staticMembers : members;
 
-			Map<String, MyBeanProperty> toAdd = new HashMap<>();
+			ObjectMap<String, MyBeanProperty> toAdd = new ObjectMap<>();
 
 			// Now, For each member, make "bean" properties.
 			for (String name : ht.keys()) {
@@ -557,7 +567,7 @@ public class MyJavaMembers {
 					// Double check name component.
 					String nameComponent
 							= name.substring(memberIsIsMethod ? 2 : 3);
-					if (nameComponent.length() == 0)
+					if (nameComponent.isEmpty())
 						continue;
 
 					// Make the bean property name.
@@ -592,6 +602,7 @@ public class MyJavaMembers {
 					// method.
 					MyMemberBox getter;
 					getter = findGetter(isStatic, ht, "get", nameComponent);
+					// if (nameComponent.equals("scripts")) Log.info(cl);
 					// If there was no valid getter, check for an is- method.
 					if (getter == null) {
 						getter = findGetter(isStatic, ht, "is", nameComponent);

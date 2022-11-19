@@ -8,6 +8,7 @@ import jdk.internal.reflect1.*;
 import rhino.classfile.*;
 
 import java.io.FileOutputStream;
+import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -293,8 +294,7 @@ public class ByteCodeTools {
 		public <T2> void setField(int flags, Class<T2> type, String name, T2 val) {
 			writer.addField(name, typeToNative(type), (short) flags);
 			if (val != null) {
-				if (!Modifier.isStatic(flags))
-					unsafe.throwException(new IllegalArgumentException("field " + name + " isn't static"));
+				if (!Modifier.isStatic(flags)) throw new IllegalArgumentException("field " + name + " isn't static");
 				queues.add(new Queue<>(name, () -> val, type));
 			}
 		}
@@ -303,6 +303,29 @@ public class ByteCodeTools {
 			if (!interfaceClass.isInterface())
 				unsafe.throwException(new IllegalArgumentException(interfaceClass + " isn't interface"));
 			writer.addInterface(interfaceClass.getName());
+		}
+
+		public void visit(Class<?> cls) {
+			Method[] methods = cls.getDeclaredMethods();
+			for (var m : methods) {
+				if (m.getAnnotation(Exclude.class) != null) continue;
+				int mod = m.getModifiers();
+				if (!Modifier.isStatic(mod) || !Modifier.isPublic(mod)) continue;
+				Class<?>[] types = m.getParameterTypes();
+				Class<?>[] args = Arrays.copyOfRange(types, 1, types.length);
+				Class<?> returnType = m.getReturnType();
+				writer.startMethod(m.getName(), nativeMethod(returnType, args), (short) Modifier.PUBLIC);
+				writer.addLoadThis();
+				for (int i = 1; i <= args.length; i++) {
+					writer.add(addLoad(args[i - 1]), i);
+				}
+				writer.addInvoke(INVOKESTATIC, nativeName(cls),
+						m.getName(), nativeMethod(returnType, types));
+				addCast(writer, returnType);
+				// writer.add(ByteCode.CHECKCAST, nativeName(returnType));
+				writer.add(buildReturn(returnType));
+				writer.stopMethod((short) (args.length + 1));
+			}
 		}
 
 		public Class<? extends T> define() {
@@ -494,6 +517,9 @@ public class ByteCodeTools {
 		T get();
 	}*/
 
+
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface Exclude {}
 
 	public interface MyRun {
 		int get(ClassFileWriter cfw);

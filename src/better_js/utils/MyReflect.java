@@ -29,37 +29,32 @@ public class MyReflect {
 	public static ClassLoader IMPL_LOADER;
 
 	// private static final Constructor<?> IMPL_CONS;
-	/**
-	 * 类访问标识
-	 **/
-	public static long classFlagsOff;
 
 	static {
 		try {
-			if (Vars.mobile) {
-				classFlagsOff = unsafe.objectFieldOffset(Class.class.getDeclaredField("accessFlags"));
-			} else {
-				Constructor<?> cons = Class.forName("jdk.internal.reflect.DelegatingClassLoader").getDeclaredConstructor(ClassLoader.class);
-				cons.setAccessible(true);
-				// IMPL_CONS = cons;
-				IMPL_LOADER = (ClassLoader) cons.newInstance(loader);
-			}
-		} catch (Exception e) {
-			classFlagsOff = -1;
+			Constructor<?> cons = Class.forName("jdk.internal.reflect.DelegatingClassLoader")
+					.getDeclaredConstructor(ClassLoader.class);
+			cons.setAccessible(true);
+			// IMPL_CONS = cons;
+			IMPL_LOADER = (ClassLoader) cons.newInstance(loader);
+		} catch (Exception ignored) {
 		}
 	}
 
 	/**
 	 * only for android
 	 **/
-	public static void setPublic(Class<?> cls) {
-		if (classFlagsOff == -1) return;
-		int flags = unsafe.getInt(cls, classFlagsOff);
-		flags &= 0xFFFF;
-		flags &= ~Modifier.FINAL;
-		flags &= ~Modifier.PRIVATE;
-		flags |= Modifier.PUBLIC;
-		unsafe.putInt(cls, classFlagsOff, flags & 0xFFFF);
+	public static <T> void setPublic(T obj, Class<T> cls) {
+		try {
+			Field f = cls.getDeclaredField("accessFlags");
+			f.setAccessible(true);
+			int flags = f.getInt(obj);
+			flags &= 0xFFFF;
+			flags &= ~Modifier.FINAL;
+			flags &= ~Modifier.PRIVATE;
+			flags |= Modifier.PUBLIC;
+			f.setInt(obj, flags & 0xFFFF);
+		} catch (Exception ignored) {}
 	}
 
 	public static Class<?> defineClass(String name, Class<?> superClass, byte[] bytes) {
@@ -72,10 +67,10 @@ public class MyReflect {
 		if (Vars.mobile) {
 			int mod = superClass.getModifiers();
 			if (/*Modifier.isFinal(mod) || */Modifier.isPrivate(mod)) {
-				setPublic(superClass);
+				setPublic(superClass, Class.class);
 			}
 			try {
-				return ((GeneratedClassLoader)((AndroidContextFactory) ContextFactory.getGlobal())
+				return ((GeneratedClassLoader) ((AndroidContextFactory) ContextFactory.getGlobal())
 						.createClassLoader(superClass.getClassLoader()))
 						.defineClass(name, bytes);
 			} catch (Throwable e) {

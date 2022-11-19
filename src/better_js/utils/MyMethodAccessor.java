@@ -38,7 +38,7 @@ public class MyMethodAccessor {
 		if (!isPublic && !isProtected) return method::invoke;
 		boolean isStatic = Modifier.isStatic(mod);
 		var baseClass = method.getDeclaringClass();
-		MyReflect.setPublic(baseClass);
+		MyReflect.setPublic(baseClass, Class.class);
 		String baseName = baseClass.getName().replace('.', '/');
 		String adapterName = baseName + "$A471";
 		var cfw = new ClassFileWriter(adapterName, isProtected ? baseName : "java/lang/Object", "<GENERATE_METHOD>");
