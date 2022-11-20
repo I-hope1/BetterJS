@@ -1,17 +1,14 @@
 package better_js.mytest;
 
 import better_js.reflect.JDKVars;
-import better_js.utils.ByteCodeTools.*;
 import better_js.utils.MyReflect;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.vm.annotation.ForceInline;
-import mindustry.Vars;
 import rhino.classfile.*;
 
 import java.lang.reflect.*;
 
-import static better_js.Test.print;
 import static better_js.reflect.JDKVars.MagicAccessorImpl;
 import static better_js.utils.ByteCodeTools.*;
 

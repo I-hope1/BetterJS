@@ -1,18 +1,17 @@
 package better_js.reflect;
 
 import arc.struct.ObjectMap;
-import better_js.Test.MyMethodAccessor;
+import better_js.Desktop.MyMethodAccessor;
 import better_js.utils.*;
 import better_js.utils.ByteCodeTools.MyClass;
 import jdk.internal.misc.Unsafe;
-import jdk.internal.reflect.*;
 import jdk.internal.reflect.MethodAccessor;
 import rhino.classfile.*;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.*;
 
-import static better_js.Test.*;
+import static better_js.Desktop.*;
 import static better_js.utils.ByteCodeTools.*;
 
 public class SetMethod {

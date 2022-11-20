@@ -2,6 +2,7 @@ package better_js.utils;
 
 import better_js.*;
 import better_js.reflect.*;
+import hope_android.FieldUtils;
 import mindustry.Vars;
 import mindustry.android.AndroidRhinoContext.AndroidContextFactory;
 import rhino.*;
@@ -25,7 +26,7 @@ public class MyReflect {
 		}
 	}
 
-	public static final MyClassLoader loader = new MyClassLoader(Test.class.getClassLoader());
+	public static final MyClassLoader loader = new MyClassLoader(Desktop.class.getClassLoader());
 	public static ClassLoader IMPL_LOADER;
 
 	// private static final Constructor<?> IMPL_CONS;
@@ -112,7 +113,9 @@ public class MyReflect {
 	static void setValue(Object obj, Field f, Object value, boolean force) {
 		Class<?> type = f.getType();
 		long offset;
-		if (Modifier.isStatic(f.getModifiers())) {
+		if (Vars.mobile) {
+			offset = FieldUtils.getFieldOffset(f);
+		} else if (Modifier.isStatic(f.getModifiers())) {
 			obj = f.getDeclaringClass();
 			offset = unsafe.staticFieldOffset(f);
 		} else offset = unsafe.objectFieldOffset(f);

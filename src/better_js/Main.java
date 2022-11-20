@@ -4,13 +4,11 @@ import arc.util.*;
 import arc.util.serialization.Json;
 import better_js.myrhino.*;
 import better_js.myrhino.MyJavaMembers;
-import better_js.mytest.TestAndroid;
 import better_js.utils.*;
 import dalvik.system.*;
 import mindustry.Vars;
 import mindustry.mod.*;
 import rhino.*;
-import rhino.classfile.*;
 import sun.misc.Unsafe;
 import sun.reflect.ReflectionFactory;
 
@@ -56,28 +54,35 @@ public class Main extends Mod {
 	}
 
 	public Main() throws Throwable {
+		try {
+			if (Class.forName(Main.class.getName(), false, Vars.mods.mainLoader()) != Main.class)
+				return;
+		} catch (ClassNotFoundException ignored) {
+		}
 		Log.info("load BetterJS constructor");
 		initScripts();
 	}
 
 	public static ContextFactory factory;
 
+	static MyFunc wa, ef, efm;
+
 	static void initScripts() throws Throwable {
 		factory = ForRhino.createFactory();
-		var wa = new MyFunc() {
+		wa = new MyFunc() {
 			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
 				try {
 					return wrapAccess(cx, scope, args[0]);
 				} catch (IllegalAccessException e) {throw new RuntimeException(e);}
 			}
 		};
-		var ef = new MyFunc() {
+		ef = new MyFunc() {
 			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
 				methodsPriority = false;
 				return evalFunc(cx, scope, args[0]);
 			}
 		};
-		var efm = new MyFunc() {
+		efm = new MyFunc() {
 			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
 				try {
 					methodsPriority = true;
@@ -87,51 +92,52 @@ public class Main extends Mod {
 				}
 			}
 		};
-		Time.runTask(1, () -> {
-			Scriptable scope = Vars.mods.getScripts().scope;
-			// Vars.mods.getScripts().context.setOptimizationLevel(-1);
-			// AAO_MyJavaAdapter.init(Vars.mods.getScripts().context, scope, false);
-			var obj = new ScriptableObject() {
-				@Override
-				public String getClassName() {
-					return "$AX";
-				}
 
-				public Object get(String key, Scriptable obj) {
-					switch (key) {
-						case "wa":
-							return wa;
-						case "ef":
-							return ef;
-						case "efm":
-							return efm;
-						default:
-							return NOT_FOUND;
-					}
-				}
-			};
-			ScriptableObject.putConstProperty(scope, "$AX", obj);
+		if (Vars.mods.hasScripts()) {
+			installScripts();
+		} else {
+			Time.runTask(0, Main::installScripts);
+		}
 
-			/*ScriptableObject.putProperty(scope, "evalFuncOnlyMethods", new MyFunc() {
-				public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-					try {
-						fieldsPriority = false;
-						return evalFuncWithoutCache(cx, scope, args[0]);
-					} finally {
-						fieldsPriority = true;
-					}
-				}
-			});*/
-		});
 
-		clearReflectionFilter();
+		try {
+			clearReflectionFilter();
+		} catch (Throwable ex) {
+			Log.err("can't clear reflection filter.", ex);
+		}
 		if (!Vars.mobile) {
 			try {
-				Test.main(new String[]{});
+				Desktop.main(new String[]{});
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
 		}
+	}
+
+	static void installScripts() {
+		Scriptable scope = Vars.mods.getScripts().scope;
+		// Vars.mods.getScripts().context.setOptimizationLevel(-1);
+		// AAO_MyJavaAdapter.init(Vars.mods.getScripts().context, scope, false);
+		var obj = new ScriptableObject() {
+			@Override
+			public String getClassName() {
+				return "$AX";
+			}
+
+			public Object get(String key, Scriptable obj) {
+				switch (key) {
+					case "wa":
+						return wa;
+					case "ef":
+						return ef;
+					case "efm":
+						return efm;
+					default:
+						return NOT_FOUND;
+				}
+			}
+		};
+		ScriptableObject.putConstProperty(scope, "$AX", obj);
 	}
 
 	/*

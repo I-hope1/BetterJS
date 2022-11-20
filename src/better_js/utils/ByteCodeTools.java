@@ -4,7 +4,9 @@ import arc.files.Fi;
 import arc.struct.*;
 import arc.util.Log;
 // import jdk.internal.reflect1.*;
+import hope_android.FieldUtils;
 import jdk.internal.reflect1.*;
+import mindustry.Vars;
 import rhino.classfile.*;
 
 import java.io.FileOutputStream;
@@ -12,7 +14,7 @@ import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static better_js.Test.*;
+import static better_js.Desktop.*;
 import static rhino.classfile.ByteCode.*;
 
 public class ByteCodeTools {
@@ -134,7 +136,7 @@ public class ByteCodeTools {
 		 * @param returnType 方法的返回值
 		 * @param args       方法的参数
 		 **/
-		public <V> void setFunc(String name, Func2<T, ArrayList<Object>, Object> func2, int flags, Class<V> returnType, Class<?>... args) {
+		public <V> void  setFunc(String name, Func2<T, ArrayList<Object>, Object> func2, int flags, Class<V> returnType, Class<?>... args) {
 			setFunc(name, func2, flags, false, returnType, args);
 		}
 
@@ -343,7 +345,7 @@ public class ByteCodeTools {
 			ObjectMap<String, Field> map = Seq.with(base.getDeclaredFields()).asMap(Field::getName);
 			long off;
 			for (var q : queues) {
-				off = unsafe.staticFieldOffset(map.get(q.name));
+				off = Vars.mobile ? FieldUtils.getFieldOffset(map.get(q.name)) : unsafe.staticFieldOffset(map.get(q.name));
 				unsafe.putObject(base, off, q.get());
 			}
 			/*var base = MyReflect.defineClass(adapterName, superClass, writer.toByteArray());

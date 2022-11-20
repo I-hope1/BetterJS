@@ -1,9 +1,9 @@
 package better_js.myrhino;
 
 import arc.util.*;
+import better_js.Desktop;
 import better_js.utils.MyMethodAccessor;
 import interfaces.InvokeFunc;
-import jdk.internal.misc.SharedSecrets;
 import jdk.internal.reflect.*;
 import mindustry.Vars;
 import rhino.*;
@@ -84,7 +84,7 @@ public final class MyMemberBox {
 		this.argTypes = method.getParameterTypes();
 		this.vararg = method.isVarArgs();
 		if (!Vars.mobile) {
-			mac = factory.getMethodAccessor(method);
+			mac = Desktop.access.getMethodAccessor(method);
 			if (mac == null) {
 				mac = factory.newMethodAccessor(method);
 			}

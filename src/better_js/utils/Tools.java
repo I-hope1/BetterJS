@@ -5,7 +5,7 @@ import arc.util.*;
 
 import java.lang.reflect.*;
 
-import static better_js.Test.unsafe;
+import static better_js.Desktop.unsafe;
 
 public class Tools {
 
