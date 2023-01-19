@@ -22,4 +22,10 @@ public class ErrorThrow {
 	public static RuntimeException reportRuntimeError4(String messageId, Object arg1, Object arg2, Object arg3, Object arg4) {
 		return Context.reportRuntimeError(ScriptRuntime.getMessage4(messageId, arg1, arg2, arg3, arg4));
 	}
+
+	protected static Scriptable ensureScriptable(Object arg){
+        if(!(arg instanceof Scriptable))
+            throw ScriptRuntime.typeError1("msg.arg.not.object", ScriptRuntime.typeof(arg));
+        return (Scriptable)arg;
+    }
 }

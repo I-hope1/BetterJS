@@ -1,11 +1,16 @@
 package better_js.myrhino;
 
 import arc.util.Log;
+import better_js.*;
+import better_js.reflect.JDKVars;
+import jdk.internal.misc.Unsafe;
 import mindustry.mod.Mods;
 import rhino.*;
 
 import java.lang.reflect.*;
 import java.util.*;
+
+import static better_js.Main.unsafe;
 
 /**
  * This class reflects non-Array Java objects into the JavaScript environment.  It
@@ -38,7 +43,11 @@ public class MyNativeJavaObject extends NativeJavaObject
 		initMembers();
 	}
 
+	public Status status;
+
 	public void initMembers() {
+		status = BetterJSRhino.status;
+
 		Class<?> dynamicType;
 		if (javaObject != null) {
 			dynamicType = javaObject.getClass();
@@ -66,16 +75,11 @@ public class MyNativeJavaObject extends NativeJavaObject
 		return false;
 	}
 
-	private long time = 0;
-	private float total = 0;
-
 	@Override
 	public Object get(String name, Scriptable start) {
-		long last = System.nanoTime();
 		// try {
 		if (fieldAndMethods != null) {
 			Object result = fieldAndMethods.get(name);
-			Log.info(fieldAndMethods);
 			if (result != null) {
 				return result;
 			}
@@ -83,14 +87,6 @@ public class MyNativeJavaObject extends NativeJavaObject
 		// TODO: passing 'this' as the scope is bogus since it has
 		//  no parent scope
 		return members.get(this, name, javaObject, false);
-		/*} finally {
-			total += (System.nanoTime() - last);
-			if (++time >= 1E5) {
-				Log.info("obj:" + total);
-				time = 0;
-				total = 0;
-			}
-		}*/
 	}
 
 	@Override
@@ -746,7 +742,7 @@ public class MyNativeJavaObject extends NativeJavaObject
 				try {
 					return ((Number) meth.invoke(value, (Object[]) null)).doubleValue();
 				} catch (IllegalAccessException | InvocationTargetException e) {
-					// XXX: ignore, or error message?
+					// XXX: ignore, orThrow error message?
 					reportConversionError(value, Double.TYPE);
 				}
 			}
@@ -804,4 +800,8 @@ public class MyNativeJavaObject extends NativeJavaObject
 
 	// private static final Object COERCED_INTERFACE_KEY = "Coerced Interface";
 
+
+	public enum Status {
+		normal, access, accessMethod
+	}
 }

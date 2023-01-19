@@ -2,6 +2,7 @@ package better_js.myrhino;
 
 import arc.struct.ObjectMap;
 import arc.util.Log;
+import better_js.myrhino.MyNativeJavaObject.Status;
 import hope_android.FieldUtils;
 import mindustry.Vars;
 import mindustry.mod.Mods;
@@ -37,7 +38,7 @@ public class MyJavaMembers {
 		this.members = new ObjectMap<>();
 		this.staticMembers = new ObjectMap<>();
 		this.cl = cl;
-		reflect(scope, includeProtected, enableAccess);
+		reflect(scope, includeProtected, status != Status.normal);
 	}
 
 	boolean has(String name, boolean isStatic) {
@@ -158,7 +159,7 @@ public class MyJavaMembers {
 			if (bp.setter == null) {
 				throw reportMemberNotFound(name);
 			}
-			// If there's only one setter or if the value is null, use the
+			// If there's only one setter orThrow if the value is null, use the
 			// main setter. Otherwise, let the NativeJavaMethod decide which
 			// setter to use:
 			if (bp.setters == null || value == null) {
@@ -504,7 +505,6 @@ public class MyJavaMembers {
 				ht.put(entry.key, fun);
 			}
 		}
-		// Log.info("methodsPriority:" + methodsPriority);
 
 		// Reflect fields.
 		Field[] fields = getAccessibleFields(includeProtected, includePrivate);
@@ -515,9 +515,9 @@ public class MyJavaMembers {
 			ObjectMap<String, Object> ht = isStatic ? staticMembers : members;
 			Object member = ht.get(name);
 			field.setAccessible(true);
-			if (member == null || (!methodsPriority && member instanceof MyNativeJavaMethod && !Modifier.isPrivate(mods))) { //change: fields will always mask methods
+			if (member == null || (status != Status.accessMethod && member instanceof MyNativeJavaMethod && !Modifier.isPrivate(mods))) { //change: fields will always mask methods
 				ht.put(name, field);
-			} else if (!methodsPriority && member instanceof MyNativeJavaMethod) {
+			} else if (status != Status.accessMethod && member instanceof MyNativeJavaMethod) {
 				MyNativeJavaMethod method = (MyNativeJavaMethod) member;
 				MyFieldAndMethods fam = new MyFieldAndMethods(scope, method.methods, field);
 				Map<String, MyFieldAndMethods> fmht = isStatic ? staticFieldAndMethods : fieldAndMethods;
@@ -542,7 +542,7 @@ public class MyJavaMembers {
 				if (oldField.getDeclaringClass().isAssignableFrom(field.getDeclaringClass())) {
 					ht.put(name, field);
 				}
-			} else if (!methodsPriority) {
+			} else if (status != Status.accessMethod) {
 				// "unknown member type"
 				Kit.codeBug();
 			}
@@ -550,7 +550,7 @@ public class MyJavaMembers {
 
 		// Create bean properties from corresponding get/set methods first for
 		// static members and then for instance members
-		if (!methodsPriority) for (int tableCursor = 0; tableCursor != 2; ++tableCursor) {
+		if (status != Status.accessMethod) for (int tableCursor = 0; tableCursor != 2; ++tableCursor) {
 			boolean isStatic = (tableCursor == 0);
 			ObjectMap<String, Object> ht = isStatic ? staticMembers : members;
 
@@ -598,7 +598,7 @@ public class MyJavaMembers {
 						}
 					}
 
-					// Find the getter method, or if there is none, the is-
+					// Find the getter method, orThrow if there is none, the is-
 					// method.
 					MyMemberBox getter;
 					getter = findGetter(isStatic, ht, "get", nameComponent);
@@ -713,7 +713,7 @@ public class MyJavaMembers {
 		// parameters
 		for (MyMemberBox method : methods) {
 			// Does getter method have an empty parameter list with a return
-			// value (eg. a getSomething() or isSomething())?
+			// value (eg. a getSomething() orThrow isSomething())?
 			if (method.argTypes.length == 0 && (!isStatic || method.isStatic())) {
 				Class<?> type = method.method().getReturnType();
 				if (type != Void.TYPE) {

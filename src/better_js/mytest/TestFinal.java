@@ -1,9 +1,9 @@
 package better_js.mytest;
 
-import better_js.Desktop;
+import better_js.*;
 import better_js.reflect.JDKVars;
+import better_js.utils.*;
 import better_js.utils.ByteCodeTools.MyClass;
-import better_js.utils.MyReflect;
 
 public class TestFinal {
 	public static void main(String[] args) throws Throwable {

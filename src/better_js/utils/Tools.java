@@ -1,5 +1,6 @@
 package better_js.utils;
 
+import arc.func.Prov;
 import arc.struct.Seq;
 import arc.util.*;
 
@@ -68,7 +69,8 @@ public class Tools {
 		}
 		return null;
 	}
-	public static Method getMethod(Class<?> cls, String name, Class<?> ...args) {
+
+	public static Method getMethod(Class<?> cls, String name, Class<?>... args) {
 		Method[] methods;
 		while (cls != Object.class && Object.class.isAssignableFrom(cls)) {
 			try {
@@ -94,6 +96,10 @@ public class Tools {
 		}
 	}
 
+	public static void a() {
+		System.out.println("aaa");
+	}
+
 	public static void forceRun(Runnable toRun) {
 		Runnable[] run = {null};
 		run[0] = () -> {
@@ -106,5 +112,34 @@ public class Tools {
 			});
 		};
 		run[0].run();
+	}
+
+	@SafeVarargs
+	public static <R> R orThrow(ProvT<R>... provTSeq) {
+		for (var p : provTSeq) {
+			try {
+				return p.get();
+			} catch (Throwable ignored) {}
+		}
+		return null;
+	}
+	@SafeVarargs
+	public static <R> R or(Prov<R>... provTSeq) {
+		R r;
+		for (var p : provTSeq) {
+			r = p.get();
+			if (r != null) return r;
+		}
+		return null;
+	}
+
+	public static <T> T setAndReturn(T t, Runnable run) {
+		run.run();
+		return t;
+	}
+
+
+	public interface ProvT<R> {
+		R get() throws Throwable;
 	}
 }

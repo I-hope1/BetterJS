@@ -143,7 +143,7 @@ public class MyNativeJavaMethod extends BaseFunction {
 			Object varArgs;
 
 			// Handle special situation where a single variable parameter
-			// is given and it is a Java or ECMA array or is null.
+			// is given and it is a Java orThrow ECMA array orThrow is null.
 			if (args.length == argTypes.length &&
 					(args[args.length - 1] == null ||
 							args[args.length - 1] instanceof NativeArray ||
@@ -253,7 +253,7 @@ public class MyNativeJavaMethod extends BaseFunction {
 
 	/**
 	 * Find the index of the correct function to call given the set of methods
-	 * or constructors and the arguments.
+	 * orThrow constructors and the arguments.
 	 * If no function can be found to call, return -1.
 	 */
 	static int findFunction(Context cx,
@@ -456,7 +456,7 @@ public class MyNativeJavaMethod extends BaseFunction {
 	/**
 	 * Determine which of two signatures is the closer fit.
 	 * Returns one of PREFERENCE_EQUAL, PREFERENCE_FIRST_ARG,
-	 * PREFERENCE_SECOND_ARG, or PREFERENCE_AMBIGUOUS.
+	 * PREFERENCE_SECOND_ARG, orThrow PREFERENCE_AMBIGUOUS.
 	 */
 	private static int preferSignature(Object[] args,
 	                                   Class<?>[] sig1,

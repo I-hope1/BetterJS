@@ -1,23 +1,23 @@
 package better_js;
 
+import arc.func.Func3;
 import arc.util.*;
 import arc.util.serialization.Json;
-import better_js.myrhino.*;
 import better_js.myrhino.MyJavaMembers;
-import better_js.utils.*;
-import dalvik.system.*;
+import better_js.myrhino.*;
+import better_js.myrhino.MyNativeJavaObject.Status;
+import better_js.utils.MyReflect;
+import dalvik.system.VMRuntime;
 import mindustry.Vars;
-import mindustry.mod.*;
+import mindustry.mod.Mod;
 import rhino.*;
 import sun.misc.Unsafe;
-import sun.reflect.ReflectionFactory;
 
-import java.lang.invoke.*;
-import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
-import java.util.*;
 
 import static better_js.BetterJSRhino.*;
+import static better_js.myrhino.MyJavaAdapter.*;
+import static mindustry.Vars.mods;
 
 public class Main extends Mod {
 	// public static Scripts scripts;
@@ -43,6 +43,7 @@ public class Main extends Mod {
 				unsafe.putObject(ForRhino.class, off, java_base);
 				unsafe.putObject(MyMemberBox.class, off, java_base);
 				unsafe.putObject(MyJavaMembers.class, off, java_base);
+				unsafe.putObject(MyInterfaceAdapter.class, off, java_base);
 				unsafe.putObject(MyReflect.class, off, java_base);
 				unsafe.putObject(Class.forName("rhino.JavaMembers"), off, java_base);
 				unsafe.putObject(Class.forName("rhino.VMBridge"), off, java_base);
@@ -55,7 +56,7 @@ public class Main extends Mod {
 
 	public Main() throws Throwable {
 		try {
-			if (Class.forName(Main.class.getName(), false, Vars.mods.mainLoader()) != Main.class)
+			if (Class.forName(Main.class.getName(), false, mods.mainLoader()) != Main.class)
 				return;
 		} catch (ClassNotFoundException ignored) {
 		}
@@ -65,46 +66,24 @@ public class Main extends Mod {
 
 	public static ContextFactory factory;
 
-	static MyFunc wa, ef, efm;
+	static Function wa, ef, efm, interfaceAdapter;
 
 	static void initScripts() throws Throwable {
-		factory = ForRhino.createFactory();
-		wa = new MyFunc() {
-			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-				try {
-					return wrapAccess(cx, scope, args[0]);
-				} catch (IllegalAccessException e) {throw new RuntimeException(e);}
-			}
-		};
-		ef = new MyFunc() {
-			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-				methodsPriority = false;
-				return evalFunc(cx, scope, args[0]);
-			}
-		};
-		efm = new MyFunc() {
-			public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-				try {
-					methodsPriority = true;
-					return evalFuncWithoutCache(cx, scope, args[0]);
-				} finally {
-					methodsPriority = false;
-				}
-			}
-		};
+		wa = new MyFunc((cx, scope, args) ->
+				wrapAccess(cx, scope, args[0])
+		);
+		ef = new MyFunc((cx, scope, args) ->
+				evalFunc(cx, scope, args.length == 1 ? args[0] : args[1], args.length == 1 ? null : args[0])
+		);
+		efm = new MyFunc((cx, scope, args) ->
+				evalFuncWithoutCache(cx, scope, args.length == 1 ? args[0] : args[1], args.length == 1 ? null : args[0], Status.accessMethod)
+		);
+		interfaceAdapter = new MyFunc((cx, scope, args) ->
+				MyInterfaceAdapter.create(cx, (Class<?>) (
+						args[0] instanceof NativeJavaObject ? ((NativeJavaObject) args[0]).unwrap() : args[0]
+				), (ScriptableObject) args[1])
+		);
 
-		if (Vars.mods.hasScripts()) {
-			installScripts();
-		} else {
-			Time.runTask(0, Main::installScripts);
-		}
-
-
-		try {
-			clearReflectionFilter();
-		} catch (Throwable ex) {
-			Log.err("can't clear reflection filter.", ex);
-		}
 		if (!Vars.mobile) {
 			try {
 				Desktop.main(new String[]{});
@@ -112,13 +91,59 @@ public class Main extends Mod {
 				throw new RuntimeException(e);
 			}
 		}
+		try {
+			clearReflectionFilter();
+		} catch (Throwable ex) {
+			Log.err("can't clear reflection filter.", ex);
+		}
+
+		factory = ForRhino.createFactory();
+
+		if (mods.hasScripts()) {
+			installScripts();
+		} else {
+			Time.runTask(0, Main::installScripts);
+		}
 	}
 
 	static void installScripts() {
-		Scriptable scope = Vars.mods.getScripts().scope;
+		if (Context.getCurrentContext() != null) {
+			/*VMBridge.setContext(VMBridge.getThreadContextHelper(), null);
+			// Context last = Context.getCurrentContext();
+			Context cx = Context.enter();
+			try {
+				MyReflect.setValue(cx,
+						Context.class.getDeclaredField("topCallScope"),
+						mods.getScripts().scope);
+				// Tools.clone(last, cx, last.getClass());
+				MyReflect.setValue(mods.getScripts(),
+						Scripts.class.getDeclaredField("context"),
+						cx);
+			} catch (NoSuchFieldException e) {
+				throw new RuntimeException(e);
+			}*/
+			try {
+				MyReflect.setValue(Context.getCurrentContext(),
+						Context.class.getDeclaredField("factory"),
+						factory);
+			} catch (NoSuchFieldException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		Scriptable scope = mods.getScripts().scope;
+		Context cx = mods.getScripts().context;
+		cx.setWrapFactory(ForRhino.wrapFactory);
+		ScriptableObject.putProperty(scope, "a", (Runnable)() -> {});
 		// Vars.mods.getScripts().context.setOptimizationLevel(-1);
 		// AAO_MyJavaAdapter.init(Vars.mods.getScripts().context, scope, false);
 		var obj = new ScriptableObject() {
+			final IdFunctionObject ctor = new IdFunctionObject(new MyJavaAdapter(), FTAG, Id_JavaAdapter,
+					"MyJavaAdapter", 1, this);
+
+			{
+				ctor.markAsConstructor(null);
+			}
+
 			@Override
 			public String getClassName() {
 				return "$AX";
@@ -132,6 +157,10 @@ public class Main extends Mod {
 						return ef;
 					case "efm":
 						return efm;
+					case "in":
+						return interfaceAdapter;
+					case "extend":
+						return ctor;
 					default:
 						return NOT_FOUND;
 				}
@@ -157,7 +186,18 @@ public class Main extends Mod {
 	 * }
 	 */
 
-	public static abstract class MyFunc implements Function {
+	public static class MyFunc implements Function {
+		Func3<Context, Scriptable, Object[], Object> func3;
+
+		public MyFunc(Func3<Context, Scriptable, Object[], Object> func3) {
+			this.func3 = func3;
+		}
+
+		public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			if (args.length == 0) throw new IllegalArgumentException("wrong args length");
+			return func3.get(cx, scope, args);
+		}
+
 		public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
 			throw new RuntimeException();
 		}
@@ -223,26 +263,15 @@ public class Main extends Mod {
 
 
 	static void clearReflectionFilter() throws Throwable {
-		if (Vars.mobile) {
-			Method methodM = Class.class.getDeclaredMethod("getDeclaredMethod", String.class, Class[].class);
-			methodM.setAccessible(true);
-			Method m2 = (Method) methodM.invoke(VMRuntime.class, "setHiddenApiExemptions",
-					new Class[]{String[].class});
-			m2.setAccessible(true);
-			m2.invoke(VMRuntime.getRuntime(), (Object) new String[]{"L"});
+		if (!OS.isAndroid) {
+			Desktop.clearReflectionFilter();
 			return;
 		}
-		Class<?> reflect = Class.forName("jdk.internal.reflect.Reflection");
-		// System.out.println(Arrays.toString(reflect.getDeclaredFields()));
-		Lookup lookup = (Lookup) ReflectionFactory.getReflectionFactory().newConstructorForSerialization(
-						Lookup.class, Lookup.class.getDeclaredConstructor(
-								Class.class))
-				.newInstance(reflect);
-		// Class.forName("jdk.internal.reflect.ConstantPool");
-		MethodHandle handle = lookup.findStaticGetter(reflect, "fieldFilterMap", Map.class);
-		((Map) handle.invokeExact()).clear();
-
-		handle = lookup.findStaticGetter(reflect, "methodFilterMap", Map.class);
-		((Map) handle.invokeExact()).clear();
+		Method methodM = Class.class.getDeclaredMethod("getDeclaredMethod", String.class, Class[].class);
+		methodM.setAccessible(true);
+		Method m2 = (Method) methodM.invoke(VMRuntime.class, "setHiddenApiExemptions",
+				new Class[]{String[].class});
+		m2.setAccessible(true);
+		m2.invoke(VMRuntime.getRuntime(), (Object) new String[]{"L"});
 	}
 }

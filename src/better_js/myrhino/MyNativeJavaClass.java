@@ -1,10 +1,13 @@
 package better_js.myrhino;
 
 import arc.util.*;
+import jdk.internal.misc.Unsafe;
 import rhino.*;
 
 import java.lang.reflect.*;
 import java.util.*;
+
+import static better_js.reflect.JDKVars.unsafe;
 
 /**
  * This class reflects Java classes into the JavaScript environment, mainly
@@ -13,7 +16,7 @@ import java.util.*;
  * reflected once into the JS environment, although we should.
  * The only known case where multiple reflections
  * are possible occurs when a j.l.Class is wrapped as part of a
- * method return or property access, rather than by walking the
+ * method return orThrow property access, rather than by walking the
  * Packages/java tree.
  *
  * @author Mike Shaver
@@ -54,9 +57,6 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 		return members.has(name, true) || javaClassPropertyName.equals(name);
 	}
 
-	private long time = 0;
-	private float total = 0;
-
 	@Override
 	public Object get(String name, Scriptable start) {
 		// When used as a constructor, ScriptRuntime.newObject() asks
@@ -72,18 +72,8 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 				return result;
 		}
 
-		long last = System.nanoTime();
-		try {
-			if (members.has(name, true)) {
-				return members.get(this, name, javaObject, true);
-			}
-		} finally {
-			total += System.nanoTime() - last;
-			if (++time >= 1E5) {
-				Log.info("cls:" + total);
-				time = 0;
-				total = 0;
-			}
+		if (members.has(name, true)) {
+			return members.get(this, name, javaObject, true);
 		}
 
 		Context cx = Context.getContext();
@@ -226,7 +216,7 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 			Object varArgs;
 
 			// Handle special situation where a single variable parameter
-			// is given and it is a Java or ECMA array.
+			// is given and it is a Java orThrow ECMA array.
 			if (args.length == argTypes.length &&
 					(args[args.length - 1] == null ||
 							args[args.length - 1] instanceof NativeArray ||

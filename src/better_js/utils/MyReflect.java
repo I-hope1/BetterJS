@@ -26,7 +26,7 @@ public class MyReflect {
 		}
 	}
 
-	public static final MyClassLoader loader = new MyClassLoader(Desktop.class.getClassLoader());
+	public static final MyClassLoader loader = new MyClassLoader(Vars.mods.mainLoader());
 	public static ClassLoader IMPL_LOADER;
 
 	// private static final Constructor<?> IMPL_CONS;
@@ -86,6 +86,24 @@ public class MyReflect {
 		}
 		// return unsafe.defineAnonymousClass(superClass, bytes, null);
 	}
+	public static Class<?> defineClass(String name, ClassLoader loader, byte[] bytes) {
+		if (Vars.mobile) {
+			try {
+				return ((GeneratedClassLoader) ((AndroidContextFactory) ContextFactory.getGlobal())
+						.createClassLoader(loader))
+						.defineClass(name, bytes);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			try {
+				return JDKVars.unsafe.defineClass0(null, bytes, 0, bytes.length, loader, null);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+	}
+
 
 	public static Class<?> defineClass(ClassLoader loader, byte[] bytes, ProtectionDomain pd) {
 		try {
@@ -110,7 +128,7 @@ public class MyReflect {
 		}
 	}
 
-	static void setValue(Object obj, Field f, Object value, boolean force) {
+	public static void setValue(Object obj, Field f, Object value, boolean force) {
 		Class<?> type = f.getType();
 		long offset;
 		if (Vars.mobile) {

@@ -11,7 +11,9 @@ tasks.withType(JavaCompile) {
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.vm.annotation=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.loader=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.platform=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.module=ALL-UNNAMED")
 //	options.compilerArgs.addAll("-classpath", "libs/libs.jar")
 
 //	options.compilerArgs.addAll("--add-opens", "java.base/jdk.internal.reflect=ALL-UNNAMED")
@@ -42,13 +44,13 @@ dependencies {
 	compileOnly files(
 			MdtDataDir + "/Mindustry_android.jar",
 			"libs/libs.jar",
-			"E:/Users/ASUS/Desktop/Mods/Android_dalvik-1.0.jar",
+			"libs/Android_dalvik-1.0.jar",
 	)
 //	implementation files("E:/Users/ASUS/Desktop/Mindustry136/Mindustry.jar")
 //	implementation "com.a1lipay.euler:andfix:0.5.0@aar"
 	implementation files(
 //			"libs/asm-5.1.jar",
-			"E:/Users/ASUS/Desktop/Mods/TmpMods/AndroidField/AndroidField.jar"
+			"libs/AndroidField.jar"
 	)
 //	compileOnly files("E:/Program Files/AndroidStudio/sdk/platforms/android-32/android.jar")
 //	implementation files("libs/reflectasm.jar")

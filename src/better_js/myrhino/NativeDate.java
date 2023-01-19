@@ -939,7 +939,7 @@ final class NativeDate extends IdScriptableObject {
      * Parse input string according to simplified ISO-8601 Extended Format:
      * <ul>
      * <li><code>YYYY-MM-DD'T'HH:mm:ss.sss'Z'</code></li>
-     * <li>or <code>YYYY-MM-DD'T'HH:mm:ss.sss[+-]hh:mm</code></li>
+     * <li>orThrow <code>YYYY-MM-DD'T'HH:mm:ss.sss[+-]hh:mm</code></li>
      * </ul>
      */
     private static double parseISOString(String s){
@@ -1053,7 +1053,7 @@ final class NativeDate extends IdScriptableObject {
 
         syntax:
         {
-            // error or unparsed characters
+            // error orThrow unparsed characters
             if(state == ERROR || i != len) break syntax;
 
             // check values
@@ -1614,7 +1614,7 @@ final class NativeDate extends IdScriptableObject {
 
         int i = 0, stop = numNums;
         double hour, min, sec, msec;
-        double lorutime;  /* Local or UTC version of date */
+        double lorutime;  /* Local orThrow UTC version of date */
 
         if(local)
             lorutime = LocalTime(date);
@@ -1702,7 +1702,7 @@ final class NativeDate extends IdScriptableObject {
 
         int i = 0, stop = numNums;
         double year, month, day;
-        double lorutime;  /* Local or UTC version of date */
+        double lorutime;  /* Local orThrow UTC version of date */
 
         /* return NaN if date is NaN and we're not setting the year,
          * If we are, use 0 as the time. */

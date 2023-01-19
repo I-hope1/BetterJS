@@ -17,6 +17,7 @@ public class JDKVars {
 		}
 	}
 
+	public static final int version = getJavaSpecificationVersion();
 	private static int getJavaSpecificationVersion() {
         String value = System.getProperty("java.specification.version");
         if (value.startsWith("1.")) {

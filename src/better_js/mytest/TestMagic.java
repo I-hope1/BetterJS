@@ -1,7 +1,7 @@
 package better_js.mytest;
 
 import better_js.reflect.JDKVars;
-import better_js.utils.MyReflect;
+import better_js.utils.*;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.vm.annotation.ForceInline;
@@ -17,7 +17,7 @@ public class TestMagic {
 	public static void init() throws Exception {
 		MyClass<?> magic = new MyClass<>(MagicAccessorImpl.getName() + "_1", MagicAccessorImpl);
 		magic.addInterface(TestInterface.class);
-		magic.setFunc("test", cfw -> {
+		magic.setFuncSelf("test", cfw -> {
 			// cfw.addALoad(0);
 			/*cfw.addPush(true);
 			cfw.add(ByteCode.PUTFIELD, nativeName(AccessibleObject.class), "override", typeToNative(boolean.class));*/

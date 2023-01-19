@@ -43,7 +43,7 @@ public class SetMethod {
 		var base = m.getDeclaringClass();
 		var newMethod = new MyClass<>(base.getName() + "$" + System.nanoTime(), Object.class);
 		newMethod.addInterface(MethodAccessor.class);
-		newMethod.setFunc("invoke", cfw -> {
+		newMethod.setFuncSelf("invoke", cfw -> {
 			boolean isStatic = Modifier.isStatic(m.getModifiers());
 			if (!isStatic) {
 				cfw.addALoad(1);

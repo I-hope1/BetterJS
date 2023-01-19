@@ -84,7 +84,7 @@ public final class MyMemberBox {
 		this.argTypes = method.getParameterTypes();
 		this.vararg = method.isVarArgs();
 		if (!Vars.mobile) {
-			mac = Desktop.access.getMethodAccessor(method);
+			mac = Desktop.myInterface.getMethodAccessor(method);
 			if (mac == null) {
 				mac = factory.newMethodAccessor(method);
 			}

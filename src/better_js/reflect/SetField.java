@@ -1,5 +1,6 @@
 package better_js.reflect;
 
+import arc.util.Log;
 import better_js.utils.ByteCodeTools.MyClass;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.FieldAccessor;
@@ -18,8 +19,9 @@ public class SetField {
 		cfw.startMethod("newFieldAccessor", type, (short) Modifier.PUBLIC);
 
 		cfw.addALoad(1);
-		cfw.addPush(true);
+		cfw.addPush(JDKVars.version <= 11);
 		cfw.addInvoke(ByteCode.INVOKESTATIC, cls.getName(), "newFieldAccessor", type);
+		// cfw.add(ByteCode.ACONST_NULL);
 		cfw.add(ByteCode.ARETURN);
 
 		cfw.stopMethod((short) 3); // this + args + var * 1
