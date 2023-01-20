@@ -29,7 +29,7 @@ repositories {
 	mavenCentral()
 	mindustryRepo()
 }
-def VERSION = "1.2.3"
+def VERSION = "1.2.4"
 
 dependencies {
 	compileOnly files(
