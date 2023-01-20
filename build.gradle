@@ -9,22 +9,22 @@ sourceCompatibility = JavaVersion.VERSION_17
 sourceSets.main.java.srcDirs = ["src"]
 
 repositories{
-    mavenCentral()
-    maven{ url 'https://www.jitpack.io' }
+	mavenCentral()
+	maven{ url 'https://www.jitpack.io' }
 }
 
 ext{
-    //the build number that this mod is made for
-    mindustryVersion = 'v141.2'
-    jabelVersion = "0.6.0"
-    sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+	//the build number that this mod is made for
+	mindustryVersion = 'v141.2'
+	jabelVersion = "0.6.0"
+	sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
 }
 
 //java 8 backwards compatibility flag
 tasks.withType(JavaCompile){
 	options.encoding = 'UTF-8'
-    options.compilerArgs.addAll(['--release', '11'])
-    options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED")
+	// options.compilerArgs.addAll(['--release', '11'])
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.vm.annotation=ALL-UNNAMED")
 	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED")
@@ -36,80 +36,80 @@ tasks.withType(JavaCompile){
 
 
 dependencies{
-    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
-    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
-    annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
+	compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+	compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
+	annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 
-    compileOnly files(
+	compileOnly files(
 		"libs/Android_dalvik-1.0.jar",
 		"libs/libs.jar",
 		"libs/Mindustry_android.jar",
 		// "libs/mod-tools.jar",
-    )
-    implementation files(
-        "lib/AndroidField.jar"
-    )
+	)
+	implementation files(
+		"lib/AndroidField.jar"
+	)
 }
 
 task jarAndroid{
-    dependsOn "jar"
+	dependsOn "jar"
 
-    doLast{
-        if(!sdkRoot || !new File(sdkRoot).exists()) throw new GradleException("No valid Android SDK found. Ensure that ANDROID_HOME is set to your Android SDK directory.")
+	doLast{
+		if(!sdkRoot || !new File(sdkRoot).exists()) throw new GradleException("No valid Android SDK found. Ensure that ANDROID_HOME is set to your Android SDK directory.")
 
-        def platformRoot = new File("$sdkRoot/platforms/").listFiles().sort().reverse().find{ f -> new File(f, "android.jar").exists()}
+		def platformRoot = new File("$sdkRoot/platforms/").listFiles().sort().reverse().find{ f -> new File(f, "android.jar").exists()}
 
-        if(!platformRoot) throw new GradleException("No android.jar found. Ensure that you have an Android platform installed.")
+		if(!platformRoot) throw new GradleException("No android.jar found. Ensure that you have an Android platform installed.")
 
-        //collect dependencies needed for desugaring
-        def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")]).collect{ "--classpath $it.path" }.join(" ")
+		//collect dependencies needed for desugaring
+		def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")]).collect{ "--classpath $it.path" }.join(" ")
 
-        //dex and desugar files - this requires d8 in your PATH
-        "d8 $dependencies --min-api 14 --output ${project.archivesBaseName}Android.jar ${project.archivesBaseName}Desktop.jar"
-            .execute(null, new File("$buildDir/libs")).waitForProcessOutput(System.out, System.err)
-    }
+		//dex and desugar files - this requires d8 in your PATH
+		"d8 $dependencies --min-api 14 --output ${project.archivesBaseName}Android.jar ${project.archivesBaseName}Desktop.jar"
+			.execute(null, new File("$buildDir/libs")).waitForProcessOutput(System.out, System.err)
+	}
 }
 
 jar{
-    archiveFileName = "${project.archivesBaseName}Desktop.jar"
+	archiveFileName = "${project.archivesBaseName}Desktop.jar"
 
-    from{
-        configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
-    }
+	from{
+		configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
+	}
 
-    from(rootDir){
-        include "mod.hjson"
-    }
+	from(rootDir){
+		include "mod.hjson"
+	}
 
-    from("assets/"){
-        include "**"
-    }
+	from("assets/"){
+		include "**"
+	}
 
-    /*doLast {
-        def fi = new File("C:\\Users\\ASUS\\AppData\\Roaming\\Mindustry\\mods\\mod-tools.jar")
-        if (fi.exists()) fi.delete()
-        if (!archiveFile.get().asFile.renameTo(fi)) throw new RuntimeException("can't move file")
-        "java -jar E:\\应用\\Mindustry\\136\\Mindustry.jar".execute().waitForProcessOutput(System.out, System.err)
-    }*/
+	/*doLast {
+		def fi = new File("C:\\Users\\ASUS\\AppData\\Roaming\\Mindustry\\mods\\mod-tools.jar")
+		if (fi.exists()) fi.delete()
+		if (!archiveFile.get().asFile.renameTo(fi)) throw new RuntimeException("can't move file")
+		"java -jar E:\\应用\\Mindustry\\136\\Mindustry.jar".execute().waitForProcessOutput(System.out, System.err)
+	}*/
 }
 
 task deploy(type: Jar){
-    dependsOn jarAndroid
-    dependsOn jar
-    archiveFileName = "${project.archivesBaseName}.jar"
+	dependsOn jarAndroid
+	dependsOn jar
+	archiveFileName = "${project.archivesBaseName}.jar"
 
-    from{ [zipTree("$buildDir/libs/${project.archivesBaseName}Desktop.jar"), zipTree("$buildDir/libs/${project.archivesBaseName}Android.jar")] }
+	from{ [zipTree("$buildDir/libs/${project.archivesBaseName}Desktop.jar"), zipTree("$buildDir/libs/${project.archivesBaseName}Android.jar")] }
 
-    doLast{
-        delete{
-            delete "$buildDir/libs/${project.archivesBaseName}Desktop.jar"
-            delete "$buildDir/libs/${project.archivesBaseName}Android.jar"
-        }
-    }
+	doLast{
+		delete{
+			delete "$buildDir/libs/${project.archivesBaseName}Desktop.jar"
+			delete "$buildDir/libs/${project.archivesBaseName}Android.jar"
+		}
+	}
 }
 task unzip(type: Copy) {
-    // 从jar的目录树中输出到目标目录
-    from zipTree("$buildDir/libs/${project.archivesBaseName}.jar")
-    into file("$buildDir/libs/tmp")
+	// 从jar的目录树中输出到目标目录
+	from zipTree("$buildDir/libs/${project.archivesBaseName}.jar")
+	into file("$buildDir/libs/tmp")
 }
 
