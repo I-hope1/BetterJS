@@ -20,11 +20,11 @@ jobs:
         cat /proc/version
         sudo chmod 777 *
         ./gradlew deploy
-    - name: Unzip mod jar
-      run: |
-        cat /proc/version
-        sudo chmod 777 *
-        ./gradlew unzip
+#     - name: Unzip mod jar
+#       run: |
+#         cat /proc/version
+#         sudo chmod 777 *
+#         ./gradlew unzip
     - name: Upload built jar file
       uses: actions/upload-artifact@v2
       with:
