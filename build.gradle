@@ -41,11 +41,10 @@ dependencies{
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 
     compileOnly files(
-		MdtDataDir + "/Mindustry_android.jar",
-		// "libs/mod-tools.jar",
+		"libs/Android_dalvik-1.0.jar",
 		"libs/libs.jar",
-		"libss/Android_dalvik-1.0.jar",
-		"lib/Mindustry_android.jar"
+		"libs/Mindustry_android.jar",
+		// "libs/mod-tools.jar",
     )
     implementation files(
         "lib/AndroidField.jar"
