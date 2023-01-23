@@ -53,7 +53,7 @@ public class ForRhino {
 		factoryMyClass.addInterface(MyContextFactory.class);
 		factoryMyClass.visit(ForRhino.class);
 
-		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true,Void.TYPE, Vars.mobile ? new Class[]{File.class} : new Class[0]);
+		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true,Void.TYPE, Vars.mobile ? new Class[]{java.io.File.class} : new Class[0]);
 
 		factoryMyClass.writer.write(Vars.tmpDirectory.child(factoryMyClass.adapterName + ".class").write());
 
