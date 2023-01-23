@@ -53,12 +53,12 @@ public class ForRhino {
 		factoryMyClass.addInterface(MyContextFactory.class);
 		factoryMyClass.visit(ForRhino.class);
 
-		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true,Void.TYPE, Vars.mobile ? new Class[]{Fi.class} : new Class[0]);
+		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true,Void.TYPE, Vars.mobile ? new Class[]{File.class} : new Class[0]);
 
 		factoryMyClass.writer.write(Vars.tmpDirectory.child(factoryMyClass.adapterName + ".class").write());
 
 		Constructor<?> cons = factoryMyClass.define(Vars.mods.mainLoader()).getDeclaredConstructors()[0];
-		factory = (ContextFactory) (Vars.mobile ? cons.newInstance(Vars.tmpDirectory.child("factory"))
+		factory = (ContextFactory) (Vars.mobile ? cons.newInstance(Vars.tmpDirectory.child("factory").file())
 				: cons.newInstance());
 		// 设置全局的factory
 		if (!ContextFactory.hasExplicitGlobal()) {
