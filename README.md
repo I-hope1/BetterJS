@@ -27,7 +27,7 @@ public class Test {
 ```javascript
 Test.apublic // 0
 Test.aprivate // undefined
-$AX.ef(() => Test.aprivate) // 1
+$AX.ef(Test, Test => Test.aprivate) // 1
 ```
 
 2. 优化js代码的运行效率
