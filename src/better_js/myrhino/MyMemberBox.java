@@ -1,18 +1,11 @@
 package better_js.myrhino;
 
-import arc.util.*;
+import arc.util.OS;
 import better_js.Desktop;
-import better_js.utils.MyMethodAccessor;
-import interfaces.InvokeFunc;
 import jdk.internal.reflect.*;
-import mindustry.Vars;
 import rhino.*;
 
-import java.lang.invoke.*;
-import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
-
-import static better_js.utils.MyMethodAccessor.*;
 
 /**
  * Wrapper class for Method and Constructor instances to cache
@@ -23,29 +16,13 @@ import static better_js.utils.MyMethodAccessor.*;
  */
 
 public final class MyMemberBox {
-	private transient Member memberObject;
-	transient Class<?>[] argTypes;
-	transient Object delegateTo;
-	transient boolean vararg;
-	private InvokeFunc invokeFunc;
+	private transient Member     memberObject;
+	transient         Class<?>[] argTypes;
+	transient         Object     delegateTo;
+	transient         boolean    vararg;
 
 	ConstructorAccessor cac;
-	MethodAccessor mac;
-
-	public InvokeFunc initFunc(Method method) {
-		if (mac != null) return mac::invoke;
-		return method::invoke;
-		// final int[] times = {0};
-		/*if (++times[0] > inflationThreshold && !lastGenerated) {
-				invokeFunc = MyMethodAccessor.generateMethod(method);
-				// Log.info("ok");
-				lastGenerated = true;
-			} else if (lastGenerated) {
-				--times[0];
-				lastGenerated = false;
-			}
-			return method.invoke(obj, args);*/
-	}
+	MethodAccessor      mac;
 
 	/*static ObjectMap<Class<?>, ConstructorAccess<?>> constructorCaches = new ObjectMap<>();
 
@@ -63,18 +40,16 @@ public final class MyMemberBox {
 			return ctor.newInstance(obj, args);
 		};
 	}*/
-
 	static final ReflectionFactory factory;
 
 	static {
-		factory = Vars.mobile ? null :
+		factory = OS.isAndroid ? null :
 				ReflectionFactory.getReflectionFactory();
 	}
 
 	public MyMemberBox(Method method) {
 		init(method);
 	}
-
 	public MyMemberBox(Constructor<?> constructor) {
 		init(constructor);
 	}
@@ -83,7 +58,7 @@ public final class MyMemberBox {
 		this.memberObject = method;
 		this.argTypes = method.getParameterTypes();
 		this.vararg = method.isVarArgs();
-		if (!Vars.mobile) {
+		if (!OS.isAndroid) {
 			mac = Desktop.myInterface.getMethodAccessor(method);
 			if (mac == null) {
 				mac = factory.newMethodAccessor(method);
@@ -95,18 +70,16 @@ public final class MyMemberBox {
 		this.memberObject = constructor;
 		this.argTypes = constructor.getParameterTypes();
 		this.vararg = constructor.isVarArgs();
-		if (!Vars.mobile) {
+		if (!OS.isAndroid) {
 			cac = factory.getConstructorAccessor(constructor);
 			if (cac == null) {
 				cac = factory.newConstructorAccessor(constructor);
 			}
 		}
 	}
-
 	Method method() {
 		return (Method) memberObject;
 	}
-
 	Constructor<?> ctor() {
 		return (Constructor<?>) memberObject;
 	}
@@ -114,19 +87,15 @@ public final class MyMemberBox {
 	Member member() {
 		return memberObject;
 	}
-
 	boolean isMethod() {
 		return memberObject instanceof Method;
 	}
-
 	boolean isCtor() {
 		return memberObject instanceof Constructor;
 	}
-
 	boolean isStatic() {
 		return Modifier.isStatic(memberObject.getModifiers());
 	}
-
 	boolean isPublic() {
 		return Modifier.isPublic(memberObject.getModifiers());
 	}
@@ -134,11 +103,9 @@ public final class MyMemberBox {
 	String getName() {
 		return memberObject.getName();
 	}
-
 	Class<?> getDeclaringClass() {
 		return memberObject.getDeclaringClass();
 	}
-
 	String toJavaDeclaration() {
 		StringBuilder sb = new StringBuilder();
 		if (isMethod()) {
@@ -147,9 +114,9 @@ public final class MyMemberBox {
 			sb.append(' ');
 			sb.append(method.getName());
 		} else {
-			Constructor<?> ctor = ctor();
-			String name = ctor.getDeclaringClass().getName();
-			int lastDot = name.lastIndexOf('.');
+			Constructor<?> ctor    = ctor();
+			String         name    = ctor.getDeclaringClass().getName();
+			int            lastDot = name.lastIndexOf('.');
 			if (lastDot >= 0) {
 				name = name.substring(lastDot + 1);
 			}
@@ -158,16 +125,14 @@ public final class MyMemberBox {
 		sb.append(MyJavaMembers.liveConnectSignature(argTypes));
 		return sb.toString();
 	}
-
-	@Override
 	public String toString() {
 		return memberObject.toString();
 	}
 
 	public Object invoke(Object target, Object[] args) {
-		if (invokeFunc == null) invokeFunc = initFunc(method());
 		try {
-			return invokeFunc.invoke_2rp0dmwi2la(target, args);
+			return OS.isAndroid ? method().invoke(target, args)
+					: mac.invoke(target, args);
 		} catch (InvocationTargetException ite) {
 			// Must allow ContinuationPending exceptions to propagate unhindered
 			Throwable e = ite;
@@ -183,10 +148,9 @@ public final class MyMemberBox {
 	}
 
 	Object newInstance(Object[] args) {
-		Constructor<?> ctor = ctor();
 		try {
 			if (cac != null) return cac.newInstance(args);
-			return ctor.newInstance(args);
+			return ctor().newInstance(args);
 		} catch (Throwable ex) {
 			throw Context.throwAsScriptRuntimeEx(ex);
 		}

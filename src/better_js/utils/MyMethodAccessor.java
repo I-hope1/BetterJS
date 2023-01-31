@@ -37,11 +37,11 @@ public class MyMethodAccessor {
 		boolean isProtected = Modifier.isProtected(mod);
 		if (!isPublic && !isProtected) return method::invoke;
 		boolean isStatic = Modifier.isStatic(mod);
-		var baseClass = method.getDeclaringClass();
-		MyReflect.setPublic(baseClass, Class.class);
+		Class<?> baseClass = method.getDeclaringClass();
+		MyReflect.setPublic(baseClass);
 		String baseName = baseClass.getName().replace('.', '/');
 		String adapterName = baseName + "$A471";
-		var cfw = new ClassFileWriter(adapterName, isProtected ? baseName : "java/lang/Object", "<GENERATE_METHOD>");
+		ClassFileWriter cfw = new ClassFileWriter(adapterName, isProtected ? baseName : "java/lang/Object", "<GENERATE_METHOD>");
 		cfw.addInterface("interfaces/InvokeFunc");
 		Class<?>[] args = method.getParameterTypes();
 		Class<?> returnType = method.getReturnType();

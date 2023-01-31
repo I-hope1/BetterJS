@@ -1,16 +1,10 @@
 package better_js.myrhino;
 
-import arc.util.Log;
-import better_js.*;
-import better_js.reflect.JDKVars;
-import jdk.internal.misc.Unsafe;
-import mindustry.mod.Mods;
+import better_js.BetterJSRhino;
 import rhino.*;
 
 import java.lang.reflect.*;
 import java.util.*;
-
-import static better_js.Main.unsafe;
 
 /**
  * This class reflects non-Array Java objects into the JavaScript environment.  It
@@ -30,17 +24,12 @@ public class MyNativeJavaObject extends NativeJavaObject
 
 	public MyNativeJavaObject(Scriptable scope, Object javaObject,
 	                          Class<?> staticType) {
-		this(scope, javaObject, staticType, false);
+		super(scope, javaObject, staticType, false);
 	}
 
 	public MyNativeJavaObject(Scriptable scope, Object javaObject,
 	                          Class<?> staticType, boolean isAdapter) {
-		this.parent = scope;
-		// Log.info(staticType);
-		this.javaObject = javaObject;
-		this.staticType = staticType;
-		this.isAdapter = isAdapter;
-		initMembers();
+		super(scope, javaObject, staticType, isAdapter);
 	}
 
 	public Status status;
@@ -60,22 +49,10 @@ public class MyNativeJavaObject extends NativeJavaObject
 				= members.getFieldAndMethodsObjects(this, javaObject, false);
 	}
 
-	@Override
 	public boolean has(String name, Scriptable start) {
 		return members.has(name, false);
 	}
 
-	@Override
-	public boolean has(int index, Scriptable start) {
-		return false;
-	}
-
-	@Override
-	public boolean has(Symbol key, Scriptable start) {
-		return false;
-	}
-
-	@Override
 	public Object get(String name, Scriptable start) {
 		// try {
 		if (fieldAndMethods != null) {
@@ -89,18 +66,6 @@ public class MyNativeJavaObject extends NativeJavaObject
 		return members.get(this, name, javaObject, false);
 	}
 
-	@Override
-	public Object get(Symbol key, Scriptable start) {
-		// Native Java objects have no Symbol members
-		return Scriptable.NOT_FOUND;
-	}
-
-	@Override
-	public Object get(int index, Scriptable start) {
-		throw members.reportMemberNotFound(Integer.toString(index));
-	}
-
-	@Override
 	public void put(String name, Scriptable start, Object value) {
 		// We could be asked to modify the value of a property in the
 		// prototype. Since we can't add a property to a Java object,
@@ -123,114 +88,8 @@ public class MyNativeJavaObject extends NativeJavaObject
 			((SymbolScriptable) prototype).put(symbol, prototype, value);
 		}
 	}
-
-	@Override
-	public void put(int index, Scriptable start, Object value) {
-		throw members.reportMemberNotFound(Integer.toString(index));
-	}
-
-	@Override
-	public boolean hasInstance(Scriptable value) {
-		// This is an instance of a Java class, so always return false
-		return false;
-	}
-
-	@Override
-	public void delete(String name) {}
-
-	@Override
-	public void delete(Symbol key) {}
-
-	@Override
-	public void delete(int index) {}
-
-	@Override
-	public Scriptable getPrototype() {
-		if (prototype == null && javaObject instanceof String) {
-			return TopLevel.getBuiltinPrototype(
-					ScriptableObject.getTopLevelScope(parent),
-					TopLevel.Builtins.String);
-		}
-		return prototype;
-	}
-
-	/**
-	 * Sets the prototype of the object.
-	 */
-	@Override
-	public void setPrototype(Scriptable m) {
-		prototype = m;
-	}
-
-	/**
-	 * Returns the parent (enclosing) scope of the object.
-	 */
-	@Override
-	public Scriptable getParentScope() {
-		return parent;
-	}
-
-	/**
-	 * Sets the parent (enclosing) scope of the object.
-	 */
-	@Override
-	public void setParentScope(Scriptable m) {
-		parent = m;
-	}
-
-	@Override
 	public Object[] getIds() {
 		return members.getIds(false);
-	}
-
-	@Override
-	public Object unwrap() {
-		return javaObject;
-	}
-
-	@Override
-	public String getClassName() {
-		return "JavaObject";
-	}
-
-	@Override
-	public Object getDefaultValue(Class<?> hint) {
-		Object value;
-		if (hint == null) {
-			if (javaObject instanceof Boolean) {
-				hint = ScriptRuntime.BooleanClass;
-			}
-			if (javaObject instanceof Number) {
-				hint = ScriptRuntime.NumberClass;
-			}
-		}
-		if (hint == null || hint == ScriptRuntime.StringClass) {
-			value = javaObject.toString();
-		} else {
-			String converterName;
-			if (hint == ScriptRuntime.BooleanClass) {
-				converterName = "booleanValue";
-			} else if (hint == ScriptRuntime.NumberClass) {
-				converterName = "doubleValue";
-			} else {
-				throw ErrorThrow.reportRuntimeError0("msg.default.value");
-			}
-			Object converterObject = get(converterName, this);
-			if (converterObject instanceof Function) {
-				Function f = (Function) converterObject;
-				value = f.call(Context.getContext(), f.getParentScope(),
-						this, ScriptRuntime.emptyArgs);
-			} else {
-				if (hint == ScriptRuntime.NumberClass
-						&& javaObject instanceof Boolean) {
-					boolean b = (Boolean) javaObject;
-					value = ScriptRuntime.wrapNumber(b ? 1.0 : 0.0);
-				} else {
-					value = javaObject.toString();
-				}
-			}
-		}
-		return value;
 	}
 
 	/**
@@ -238,11 +97,11 @@ public class MyNativeJavaObject extends NativeJavaObject
 	 * desired one.  This should be superceded by a conversion-cost calculation
 	 * function, but for now I'll hide behind precedent.
 	 */
-	public static boolean canConvert(Object fromObj, Class<?> to) {
+	/*public static boolean canConvert(Object fromObj, Class<?> to) {
 		int weight = getConversionWeight(fromObj, to);
 
 		return (weight < CONVERSION_NONE);
-	}
+	}*/
 
 	private static final int JSTYPE_UNDEFINED = 0; // undefined type
 	private static final int JSTYPE_NULL = 1; // null
@@ -458,7 +317,7 @@ public class MyNativeJavaObject extends NativeJavaObject
 	 * Type-munging for field setting and method invocation.
 	 * Conforms to LC3 specification
 	 */
-	static Object coerceTypeImpl(Class<?> type, Object value) {
+	/*static Object coerceTypeImpl(Class<?> type, Object value) {
 		if (value != null && value.getClass() == type) {
 			return value;
 		}
@@ -620,7 +479,7 @@ public class MyNativeJavaObject extends NativeJavaObject
 		}
 
 		return value;
-	}
+	}*/
 
 	private static Object coerceToNumber(Class<?> type, Object value) {
 		Class<?> valueClass = value.getClass();

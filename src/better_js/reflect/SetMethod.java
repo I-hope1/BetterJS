@@ -2,6 +2,7 @@ package better_js.reflect;
 
 import arc.struct.ObjectMap;
 import better_js.Desktop.MyMethodAccessor;
+import better_js.Main;
 import better_js.utils.*;
 import better_js.utils.ByteCodeTools.MyClass;
 import jdk.internal.misc.Unsafe;
@@ -40,8 +41,8 @@ public class SetMethod {
 	}
 
 	private static Object generateMethod(Method m) {
-		var base = m.getDeclaringClass();
-		var newMethod = new MyClass<>(base.getName() + "$" + System.nanoTime(), Object.class);
+		Class<?> base = m.getDeclaringClass();
+		MyClass<?> newMethod = new MyClass<>(base.getName() + "$" + System.nanoTime(), Object.class);
 		newMethod.addInterface(MethodAccessor.class);
 		newMethod.setFuncSelf("invoke", cfw -> {
 			boolean isStatic = Modifier.isStatic(m.getModifiers());
@@ -78,7 +79,7 @@ public class SetMethod {
 			Method m = (Method) _args.get(0);
 			final int[] ID = {0};
 			if (false) return classObjectMapObjectMap.get(m, () -> {
-				var myClass2 = new MyClass<>("_HAKP$" + ID[0]++, Object.class);
+				MyClass<?> myClass2 = new MyClass<>("_HAKP$" + ID[0]++, Object.class);
 				myClass2.writer.setFlags((short) (Modifier.PRIVATE | Modifier.FINAL));
 				String fieldName = "__handle__";
 				myClass2.addInterface(MethodAccessor.class);

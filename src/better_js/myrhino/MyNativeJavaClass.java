@@ -1,13 +1,21 @@
 package better_js.myrhino;
 
-import arc.util.*;
-import jdk.internal.misc.Unsafe;
-import rhino.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Modifier;
+import java.util.Map;
 
-import java.lang.reflect.*;
-import java.util.*;
-
-import static better_js.reflect.JDKVars.unsafe;
+import rhino.Context;
+import rhino.Function;
+import rhino.Kit;
+import rhino.NativeArray;
+import rhino.NativeJavaArray;
+import rhino.NativeJavaObject;
+import rhino.NativeJavaPackage;
+import rhino.ScriptRuntime;
+import rhino.Scriptable;
+import rhino.ScriptableObject;
+import rhino.WrapFactory;
+import rhino.Wrapper;
 
 /**
  * This class reflects Java classes into the JavaScript environment, mainly

@@ -14,7 +14,7 @@ public class JSExtend implements IdFunctionCall {
 	}
 
 	public static void init(Context cx, Scriptable scope, boolean sealed) {
-		var obj = new JSExtend();
+		JSExtend obj = new JSExtend();
 		IdFunctionObject ctor = new IdFunctionObject(obj, FTAG, 1, "JSExtend", 1, scope);
 		ctor.markAsConstructor(null);
 		if (sealed) {

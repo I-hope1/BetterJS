@@ -11,6 +11,7 @@ import hope_android.FieldUtils;
 import interfaces.InvokeFunc;
 import mindustry.Vars;
 import mindustry.android.AndroidRhinoContext.AndroidContextFactory;
+import mindustry.mod.Mod;
 import mindustry.world.blocks.ItemSelection;
 import rhino.*;
 import rhino.classfile.*;
@@ -34,8 +35,8 @@ public class TestAndroid {
 		}, Modifier.PUBLIC | Modifier.FINAL, int.class, Field.class);*/
 
 		// test
-		// testField();
-		// testMethod();
+		testField();
+		testMethod();
 		if (true) return;
 		Log.info(ItemSelection.class);
 		Tools.forceRun(() -> {
@@ -47,7 +48,7 @@ public class TestAndroid {
 			ClassLoader pathLoader = Vars.class.getClassLoader();
 			/*Log.info(pathLoader);
 			Log.info(pathLoader.getParent());*/
-			var base = new BaseDexClassLoader(toFile.path(), null, null, pathLoader.getParent()) {
+			BaseDexClassLoader base = new BaseDexClassLoader(toFile.path(), null, null, pathLoader.getParent()) {
 				private boolean inChild;
 
 				@Override
@@ -98,7 +99,7 @@ public class TestAndroid {
 		});
 	}
 
-	static final Method m;
+	static final Method       m;
 	static final MethodHandle handle;
 
 	static {
@@ -138,28 +139,44 @@ public class TestAndroid {
 	}
 
 	public static void testField() throws Exception {
-		Field f = TestAndroid.class.getDeclaredField("a");
+		Field f = TestAndroid.class.getDeclaredField("a"), fb = TestAndroid.class.getDeclaredField("b");
 		f.setAccessible(true);
-		Object ins = new TestAndroid();
+		Object  ins      = new TestAndroid();
+		boolean isStatic = Modifier.isStatic(f.getModifiers());
+		Class.forName("better_js.utils.MyReflect");
 		Time.mark();
-		for (int i = 0; i < 1E6; i++) {
-			f.get(ins);
-		}
-		Log.info("field:" + Time.elapsed());
-		// int index = access.getIndex(f);
-		// long off = ;
+		MyReflect.setValue(isStatic ? f.getDeclaringClass() : ins, FieldUtils.getFieldOffset(fb), 0, f.getType());
+		// Log.info("unsafe-1: @ms", Time.elapsed());
+		// Time.mark();
+		// MyReflect.setValue(isStatic ? f.getDeclaringClass() : ins, FieldUtils.getFieldOffset(fb), 0, f.getType());
+		// Log.info("unsafe-2: @ms", Time.elapsed());
+		// if (true) return;
+		double times = 2e4F;
 		Time.mark();
-		for (int i = 0; i < 1E6; i++) {
-			// access.get(ins, index);
-			unsafe.getObject(ins, FieldUtils.getFieldOffset(f));
+		for (int i = 0; i < times; i++) {
+			f.set(ins, i);
 		}
-		Log.info("unsafe:" + Time.elapsed());
+		Log.info("field: @ms, res: @", Time.elapsed() / times, a);
+
+		// StringBuilder sb = new StringBuilder();
+		// float last = 0;
+		Time.mark();
+		for (int i = 0; i < times; i++) {
+			// Time.mark();
+			MyReflect.setValue(isStatic ? f.getDeclaringClass() : ins, FieldUtils.getFieldOffset(f), i, f.getType());
+			// float now = Time.elapsed();
+			// sb.append(now).append('\t').append(now - last).append('\n');
+			// last = now;
+		}
+		// Log.info(sb.toString());
+		Log.info("unsafe: @ms, res: @", Time.elapsed() / times, a);
 		/*Class<?> cls = Class.forName("rhino.JavaMembers");
 		MyReflect.setPublic(cls);
 		Log.info(Modifier.toString(cls.getModifiers()));*/
 	}
 
-	public int a = 1;
+	static int a = 1;
+	static int b = 1;
 
 	public static void aMethod() {
 	}
@@ -175,7 +192,7 @@ public class TestAndroid {
 		}
 		try {
 			//反射获取到DexPathList属性对象pathList;
-			Field field = ReflectUtils.findField(classLoader, "pathList");
+			Field  field    = ReflectUtils.findField(classLoader, "pathList");
 			Object pathList = field.get(classLoader);
 
 
@@ -192,8 +209,8 @@ public class TestAndroid {
 
 
 			//3.2获得pathList的dexElements属性（old）
-			Field dexElementsField = ReflectUtils.findField(pathList, "dexElements");
-			Object[] dexElements = (Object[]) dexElementsField.get(pathList);
+			Field    dexElementsField = ReflectUtils.findField(pathList, "dexElements");
+			Object[] dexElements      = (Object[]) dexElementsField.get(pathList);
 
 			//3.3、patch+old合并，并反射赋值给pathList的dexElements
 			Object[] newElements = (Object[]) Array.newInstance(patchElements.getClass().getComponentType(), patchElements.length + dexElements.length);

@@ -1,72 +1,67 @@
 package better_js;
 
 import arc.files.Fi;
-import arc.func.Func2;
-import arc.struct.ObjectMap;
-import better_js.BetterJSRhino.DelegatingScope;
+import arc.util.OS;
 import better_js.myrhino.*;
 import better_js.myrhino.MyNativeJavaObject.Status;
 import better_js.utils.ByteCodeTools.*;
 import better_js.utils.MyReflect;
 import mindustry.Vars;
+import mindustry.mod.ModClassLoader;
 import rhino.*;
 
+import java.io.File;
 import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.*;
 
 import static better_js.BetterJSRhino.status;
 import static better_js.Main.*;
-import static rhino.Context.*;
+import static rhino.Context.FEATURE_ENHANCED_JAVA_ACCESS;
 
 public class ForRhino {
 	// public static FieldUtils fieldUtils = null;
-	public static final Map NORMAL_PRIVATE_MAP = new ConcurrentHashMap<>(16, 0.75f, 1);
-	public static final ObjectMap MY_PRIVATE_MAP = new ObjectMap<>();
-	public static final long classCacheLong;
+//	public static final Map           NORMAL_PRIVATE_MAP = new ConcurrentHashMap<>(16, 0.75f, 1);
+//	public static final ObjectMap     MY_PRIVATE_MAP     = new ObjectMap<>();
+	public static final long          classCacheOff;
+	static              long          wrapFactoryOff;
+	public static       MyWrapFactory wrapFactory        = new MyWrapFactory();
 
 	static {
 		try {
-			classCacheLong = unsafe.objectFieldOffset(ClassCache.class.getDeclaredField("classTable"));
-			// classCache.setAccessible(true);
-		} catch (NoSuchFieldException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	static long wrapFactoryOff;
-
-	static {
-		try {
+			classCacheOff = unsafe.objectFieldOffset(ClassCache.class.getDeclaredField("classTable"));
 			wrapFactoryOff = unsafe.objectFieldOffset(Context.class.getDeclaredField("wrapFactory"));
 		} catch (NoSuchFieldException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static MyWrapFactory wrapFactory = new MyWrapFactory();
 
 	public static ContextFactory createFactory() throws Exception {
-		ContextFactory global = ContextFactory.getGlobal();
-		MyClass<? extends ContextFactory> factoryMyClass = new MyClass<>(global.getClass().getName() + "$1", global.getClass());
+		if (true) return ContextFactory.getGlobal();
+		ContextFactory                    global         = ContextFactory.getGlobal();
+		MyClass<? extends ContextFactory> factoryMyClass = new MyClass<>(global.getClass().getName().replace('.', '/') + "$1", global.getClass());
 		factoryMyClass.addInterface(MyContextFactory.class);
 		factoryMyClass.visit(ForRhino.class);
 
-		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true,Void.TYPE, Vars.mobile ? new Class[]{Fi.class} : new Class[0]);
-
-		factoryMyClass.writer.write(Vars.tmpDirectory.child(factoryMyClass.adapterName + ".class").write());
+		factoryMyClass.setFunc("<init>", null, Modifier.PUBLIC, true, Void.TYPE, OS.isAndroid ? new Class[]{File.class} : new Class[0]);
+		// factoryMyClass.writer.write(Vars.tmpDirectory.child(factoryMyClass.adapterName + ".class").write());
+		try {
+			Vars.mods.mainLoader().loadClass(factoryMyClass.superClass.getName());
+		} catch (ClassNotFoundException e) {
+			((ModClassLoader) Vars.mods.mainLoader()).addChild(factoryMyClass.superClass.getClassLoader());
+		}
 
 		Constructor<?> cons = factoryMyClass.define(Vars.mods.mainLoader()).getDeclaredConstructors()[0];
-		factory = (ContextFactory) (Vars.mobile ? cons.newInstance(Vars.tmpDirectory.child("factory"))
+		Fi             fi   = Vars.tmpDirectory.child("wprhinokfactorys");
+		fi.mkdirs();
+		factory = (ContextFactory) (OS.isAndroid ? cons.newInstance(fi.file())
 				: cons.newInstance());
 		// 设置全局的factory
 		if (!ContextFactory.hasExplicitGlobal()) {
 			ContextFactory.getGlobalSetter().setContextFactoryGlobal(factory);
 		} else {
 			MyReflect.setValue(null,
-					ContextFactory.class.getDeclaredField("global"),
-					factory);
+			                   ContextFactory.class.getDeclaredField("global"),
+			                   factory, true);
 		}
 		return factory;
 	}
@@ -80,12 +75,12 @@ public class ForRhino {
 	 * {@link Context#seal(Object)} on the result to prevent
 	 * {@link Context} changes by hostile scripts orThrow applets.
 	 */
-	@Include(buildSuper = true)
+	/*@Include(buildSuper = true)
 	public static Context makeContext(ContextFactory self) {
 		Context cx = ((MyContextFactory) self).super$_makeContext();
 		cx.setWrapFactory(wrapFactory);
 		return cx;
-	}
+	}*/
 
 	/**
 	 * Execute top call to script orThrow function.
@@ -94,12 +89,12 @@ public class ForRhino {
 	 * to perform the real call. In this way execution of any script
 	 * happens inside this function.
 	 */
-	@Include(buildSuper = true)
+	// @Include(buildSuper = true)
 	public static Object doTopCall(ContextFactory self, Callable callable,
 	                               Context cx, Scriptable scope,
 	                               Scriptable thisObj, Object[] args) {
 		// try {
-		Object result = callable.call(cx, status == Status.normal ? scope : new DelegatingScope(scope), thisObj, args);
+		Object result = callable.call(cx, scope, thisObj, args);
 		return result instanceof ConsString ? result.toString() : result;
 		/*} catch (Throwable e) {
 			Log.err(e);
@@ -114,17 +109,14 @@ public class ForRhino {
 	 */
 	@Include(buildSuper = true)
 	public static boolean hasFeature(ContextFactory self, Context cx, int featureIndex) {
-		switch (featureIndex) {
-			case FEATURE_ENHANCED_JAVA_ACCESS:
-				return status != Status.normal;
-			case FEATURE_INTEGER_WITHOUT_DECIMAL_PLACE:
-				return true;
+		if (featureIndex == FEATURE_ENHANCED_JAVA_ACCESS) {
+			return status != Status.normal;
 		}
 		return ((MyContextFactory) self).super$_hasFeature(cx, featureIndex);
 	}
 
 	public static final Class<?> JavaMembersClass;
-	public static final long javaMembersOff, javaStaticMembersOff;
+	public static final long     javaMembersOff, javaStaticMembersOff;
 
 	static {
 		try {
@@ -137,29 +129,22 @@ public class ForRhino {
 	}
 
 	public static class MyWrapFactory extends WrapFactory {
-		private static final ObjectMap<Class<?>, ObjectMap<Object, Scriptable>> objCache = new ObjectMap<>();
-		private static final ObjectMap<Class<?>, Scriptable> classCache = new ObjectMap<>();
-
+//		ObjectMap<Status, ObjectMap<Object, Scriptable>> cache = new ObjectMap<>();
 		public Scriptable wrapJavaClass(Context cx, Scriptable scope, Class<?> javaClass) {
-			// if (enableAccess) return new MyNativeJavaObject(scope, javaObject, staticType);
-			// return classCache.get(javaClass, () -> new MyNativeJavaClass(scope, javaClass));
-			return new MyNativeJavaClass(scope, javaClass, true);
+			return new MyNativeJavaClass(scope, javaClass);
 		}
 
 		public Scriptable wrapAsJavaObject(Context cx, Scriptable scope, Object javaObject, Class<?> staticType) {
-			// if (staticType == null || javaObject == null) return new MyNativeJavaObject(scope, javaObject, staticType);
-			// return objCache.get(staticType, ObjectMap::new).get(javaObject, () -> new MyNativeJavaObject(scope, javaObject, staticType));
-			return new MyNativeJavaObject(scope, javaObject, staticType, true);
+			return new MyNativeJavaObject(scope, javaObject, staticType);
 		}
 	}
 
 	public interface MyContextFactory {
 		Context super$_makeContext();
 
-		Object super$_doTopCall(Callable callable,
+		/*Object super$_doTopCall(Callable callable,
 		                        Context cx, Scriptable scope,
-		                        Scriptable thisObj, Object[] args);
-
+		                        Scriptable thisObj, Object[] args);*/
 		boolean super$_hasFeature(Context cx, int featureIndex);
 	}
 }

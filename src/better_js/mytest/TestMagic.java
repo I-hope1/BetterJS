@@ -5,6 +5,7 @@ import better_js.utils.*;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.vm.annotation.ForceInline;
+import mindustry.Vars;
 import rhino.classfile.*;
 
 import java.lang.reflect.*;
@@ -30,7 +31,7 @@ public class TestMagic {
 			return 2;
 		}, Modifier.PUBLIC, void.class, FuncInvoke.class);
 		byte[] bytes = magic.writer.toByteArray();
-		Class<?> cls = unsafe.defineClass(null, bytes, 0, bytes.length, MyReflect.IMPL_LOADER, null);
+		Class<?> cls = unsafe.defineClass(null, bytes, 0, bytes.length, Vars.mods.mainLoader(), null);
 		TestInterface o = (TestInterface) unsafe.allocateInstance(cls);
 		// Method m = Object.class.getDeclaredMethod("hashCode");
 		// print(m.isAccessible());

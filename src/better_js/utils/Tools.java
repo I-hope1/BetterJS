@@ -5,6 +5,7 @@ import arc.struct.Seq;
 import arc.util.*;
 
 import java.lang.reflect.*;
+import java.util.function.*;
 
 import static better_js.Desktop.unsafe;
 
@@ -76,7 +77,7 @@ public class Tools {
 			try {
 				// Log.debug(Seq.with(cls.getDeclaredFields()));
 				methods = cls.getDeclaredMethods();
-				for (var m : methods) {
+				for (Method m : methods) {
 					if (m.getName().equals(name)) return m;
 				}
 				// return cls.getDeclaredMethod(name);
@@ -101,41 +102,77 @@ public class Tools {
 	}
 
 	public static void forceRun(Runnable toRun) {
-		Runnable[] run = {null};
-		run[0] = () -> {
-			Time.runTask(0, () -> {
+		new Runnable() {
+			@Override
+			public void run() {
 				try {
 					toRun.run();
-				} catch (Exception e) {
-					run[0].run();
+				} catch (NotTimeException e) {
+					Time.runTask(0, this);
 				}
-			});
-		};
-		run[0].run();
+			}
+		}.run();
 	}
+
+	public static class NotTimeException extends RuntimeException {
+	}
+
 
 	@SafeVarargs
 	public static <R> R orThrow(ProvT<R>... provTSeq) {
-		for (var p : provTSeq) {
+		for (ProvT<R> p : provTSeq) {
 			try {
 				return p.get();
 			} catch (Throwable ignored) {}
 		}
 		return null;
 	}
+
+	// a ?? b ?? c ?? d
 	@SafeVarargs
 	public static <R> R or(Prov<R>... provTSeq) {
 		R r;
-		for (var p : provTSeq) {
+		for (Prov<R> p : provTSeq) {
 			r = p.get();
 			if (r != null) return r;
 		}
 		return null;
 	}
 
-	public static <T> T setAndReturn(T t, Runnable run) {
-		run.run();
-		return t;
+	public static final class SR<T> {
+		T value;
+
+		public SR(T value) {
+			this.value = value;
+		}
+
+		public SR<T> cons(Consumer<T> consumer) {
+			consumer.accept(value);
+			return this;
+		}
+
+		public SR<T> reset(Supplier<T> value) {
+			this.value = value.get();
+			return this;
+		}
+
+		public SR<T> ifeq(Object obj, Runnable run) {
+			if (value.equals(obj)) {
+				run.run();
+			}
+			return this;
+		}
+
+		public SR<T> ifneq(Object obj, Runnable run) {
+			if (!value.equals(obj)) {
+				run.run();
+			}
+			return this;
+		}
+
+		public T get() {
+			return value;
+		}
 	}
 
 
