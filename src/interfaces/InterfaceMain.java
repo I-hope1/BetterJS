@@ -33,8 +33,6 @@ public class InterfaceMain {
 
 	static void init() throws Throwable {
 		Desktop.main(null);
-		// ReflectionFactory.class.getDeclaredField("inflationThreshold").setInt(null, 10_0000_0000);
-		// var acc = MagicReflect.getFieldAccess(m);
 	}
 
 	public static void main(String[] args) throws Throwable {

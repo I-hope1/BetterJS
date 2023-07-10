@@ -3,27 +3,16 @@ package better_js.mytest;
 import arc.files.Fi;
 import arc.util.*;
 import better_js.Main;
-import better_js.android.TestPrivate;
 import better_js.utils.*;
-import better_js.utils.ByteCodeTools.MyClass;
-// import com.esotericsoftware.reflectasm.FieldAccess;
 import better_js.utils.Tools.NotTimeException;
 import dalvik.system.*;
 import hope_android.FieldUtils;
-import interfaces.InvokeFunc;
 import mindustry.Vars;
-import mindustry.android.AndroidRhinoContext.AndroidContextFactory;
-import mindustry.mod.Mod;
-import mindustry.world.blocks.ItemSelection;
-import rhino.*;
-import rhino.classfile.*;
 
 import java.io.*;
 import java.lang.invoke.*;
 import java.lang.reflect.*;
 import java.util.*;
-
-import static better_js.Main.unsafe;
 
 public class TestAndroid {
 
