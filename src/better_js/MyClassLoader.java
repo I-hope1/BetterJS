@@ -1,7 +1,5 @@
 package better_js;
 
-import arc.util.Log;
-
 import java.net.URL;
 import java.util.ArrayList;
 

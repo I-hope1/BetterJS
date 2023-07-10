@@ -1,7 +1,6 @@
 package better_js;
 
 import apzmagic.MAGICIMPL;
-import arc.struct.ObjectMap;
 import arc.util.*;
 import better_js.reflect.*;
 import better_js.utils.*;
@@ -10,16 +9,15 @@ import jdk.internal.loader.*;
 import jdk.internal.module.Modules;
 import jdk.internal.reflect.*;
 import mindustry.Vars;
-import mindustry.mod.*;
 import rhino.classfile.ByteCode;
 import sun.misc.Unsafe;
 
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
-import java.net.URL;
 import java.util.*;
 
+import static better_js.reflect.JDKVars.junsafe;
 import static better_js.utils.ByteCodeTools.*;
 import static java.lang.reflect.Modifier.*;
 
@@ -27,8 +25,9 @@ import static java.lang.reflect.Modifier.*;
  * only for window
  **/
 public class Desktop {
-	public static final Unsafe unsafe = Main.unsafe;
-	public static final Lookup lookup;
+	public static final Unsafe      unsafe = Main.unsafe;
+	public static final Lookup      lookup;
+	private static      ClassLoader loader;
 
 	public static AO_MyInterface myInterface;
 
@@ -58,19 +57,23 @@ public class Desktop {
 	}
 
 	public static void main(String[] ___) throws Throwable {
+		init(Vars.mods.mainLoader());
+	}
+	public static void init(ClassLoader loader) throws Throwable {
+		if (Desktop.loader != null) throw new RuntimeException("Can't init twice.");
+		Desktop.loader = loader;
 		((Map) lookup.findStaticGetter(reflect, "fieldFilterMap", Map.class)
-				.invokeExact()).clear();
+		  .invokeExact()).clear();
 		((Map) lookup.findStaticGetter(reflect, "methodFilterMap", Map.class)
-				.invokeExact()).clear();
+		  .invokeExact()).clear();
 		Field moduleSetter = Class.class.getDeclaredField("module");
 		unsafe.putObject(Desktop.class, unsafe.objectFieldOffset(moduleSetter), Object.class.getModule());
 
-		// MethodHandle m = lookup.findStatic(Module.class, "addExportsToAll0", MethodType.methodType(void.class, Module.class, String.class));
-		// m.setAccessible(true);
+		/** open一些模块  */
 		Module java_base = Object.class.getModule();
 		Module everyone  = (Module) unsafe.getObject(Module.class, unsafe.staticFieldOffset(Module.class.getDeclaredField("EVERYONE_MODULE")));
 		lookup.findVirtual(Module.class, "implAddOpens", MethodType.methodType(void.class, String.class))
-				.invokeExact(java_base, "jdk.internal.module");
+		  .invokeExact(java_base, "jdk.internal.module");
 		Modules.addOpens(java_base, "jdk.internal.module", everyone);
 		Modules.addOpens(java_base, "jdk.internal.misc", everyone);
 		Modules.addOpens(java_base, "jdk.internal.reflect", everyone);
@@ -82,12 +85,12 @@ public class Desktop {
 		} catch (Throwable ignored) {}
 
 		lookup.findStatic(Module.class, "addReads0", MethodType.methodType(void.class, Module.class, Module.class))
-				.invokeExact(java_base, everyone);
+		  .invokeExact(java_base, everyone);
 
 		byte[] bytes;
 		// Func2
-		// bytes = new byte[]{-54, -2, -70, -66, 0, 0, 0, 55, 0, 12, 7, 0, 2, 1, 0, 27, 106, 100, 107, 47, 105, 110, 116, 101, 114, 110, 97, 108, 47, 114, 101, 102, 108, 101, 99, 116, 49, 47, 70, 117, 110, 99, 50, 7, 0, 4, 1, 0, 16, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 1, 0, 3, 103, 101, 116, 1, 0, 56, 40, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 41, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 1, 0, 9, 83, 105, 103, 110, 97, 116, 117, 114, 101, 1, 0, 13, 40, 84, 80, 49, 59, 84, 80, 50, 59, 41, 84, 82, 59, 1, 0, 82, 60, 80, 49, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 80, 50, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 82, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 62, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 1, 0, 10, 83, 111, 117, 114, 99, 101, 70, 105, 108, 101, 1, 0, 10, 70, 117, 110, 99, 50, 46, 106, 97, 118, 97, 6, 1, 0, 1, 0, 3, 0, 0, 0, 0, 0, 1, 4, 1, 0, 5, 0, 6, 0, 1, 0, 7, 0, 0, 0, 2, 0, 8, 0, 2, 0, 7, 0, 0, 0, 2, 0, 9, 0, 10, 0, 0, 0, 2, 0, 11};
-		// MyReflect.defineClass(null, bytes);
+		/* bytes = new byte[]{-54, -2, -70, -66, 0, 0, 0, 55, 0, 12, 7, 0, 2, 1, 0, 27, 106, 100, 107, 47, 105, 110, 116, 101, 114, 110, 97, 108, 47, 114, 101, 102, 108, 101, 99, 116, 49, 47, 70, 117, 110, 99, 50, 7, 0, 4, 1, 0, 16, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 1, 0, 3, 103, 101, 116, 1, 0, 56, 40, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 41, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 1, 0, 9, 83, 105, 103, 110, 97, 116, 117, 114, 101, 1, 0, 13, 40, 84, 80, 49, 59, 84, 80, 50, 59, 41, 84, 82, 59, 1, 0, 82, 60, 80, 49, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 80, 50, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 82, 58, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 62, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 59, 1, 0, 10, 83, 111, 117, 114, 99, 101, 70, 105, 108, 101, 1, 0, 10, 70, 117, 110, 99, 50, 46, 106, 97, 118, 97, 6, 1, 0, 1, 0, 3, 0, 0, 0, 0, 0, 1, 4, 1, 0, 5, 0, 6, 0, 1, 0, 7, 0, 0, 0, 2, 0, 8, 0, 2, 0, 7, 0, 0, 0, 2, 0, 9, 0, 10, 0, 0, 0, 2, 0, 11};
+		MyReflect.defineClass(null, bytes); */
 		// AO_MyInterface
 		bytes = new byte[]{-54, -2, -70, -66, 0, 0, 0, 55, 0, 11, 7, 0, 2, 1, 0, 25, 105, 110, 116, 101, 114, 102, 97, 99, 101, 115, 47, 65, 79, 95, 77, 121, 73, 110, 116, 101, 114, 102, 97, 99, 101, 7, 0, 4, 1, 0, 16, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 79, 98, 106, 101, 99, 116, 1, 0, 11, 115, 101, 116, 79, 118, 101, 114, 114, 105, 100, 101, 1, 0, 39, 40, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 114, 101, 102, 108, 101, 99, 116, 47, 65, 99, 99, 101, 115, 115, 105, 98, 108, 101, 79, 98, 106, 101, 99, 116, 59, 41, 86, 1, 0, 17, 103, 101, 116, 77, 101, 116, 104, 111, 100, 65, 99, 99, 101, 115, 115, 111, 114, 1, 0, 65, 40, 76, 106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 114, 101, 102, 108, 101, 99, 116, 47, 77, 101, 116, 104, 111, 100, 59, 41, 76, 106, 100, 107, 47, 105, 110, 116, 101, 114, 110, 97, 108, 47, 114, 101, 102, 108, 101, 99, 116, 47, 77, 101, 116, 104, 111, 100, 65, 99, 99, 101, 115, 115, 111, 114, 59, 1, 0, 10, 83, 111, 117, 114, 99, 101, 70, 105, 108, 101, 1, 0, 19, 65, 79, 95, 77, 121, 73, 110, 116, 101, 114, 102, 97, 99, 101, 46, 106, 97, 118, 97, 6, 1, 0, 1, 0, 3, 0, 0, 0, 0, 0, 2, 4, 1, 0, 5, 0, 6, 0, 0, 4, 1, 0, 7, 0, 8, 0, 0, 0, 1, 0, 9, 0, 0, 0, 2, 0, 10};
 		MyReflect.defineClass(null, bytes);
@@ -103,23 +106,8 @@ public class Desktop {
 		defineReflectionFactory();
 
 		// defineJavaLangAccess();
-		Time.runTask(0, () -> {
-			try {
-				Class.forName("ihope_lib.MyReflect", false, Vars.mods.mainLoader());
-			} catch (ClassNotFoundException e) {
-				try {
-					definePlatformClassLoader();
-				} catch (Throwable x) {
-					Log.err(x);
-				}
-			}
-		});
-		/*MyClass<?> javaLangClass = new MyClass<>(Private.class.getName() + "$qwq", Private.class);
-		javaLangClass.setFunc("<init>", null, PUBLIC, Void.TYPE, Private.class.getDeclaredConstructors()[0].getParameterTypes());
-
-		var cls = javaLangClass.define();
-		// unsafe.putObject(cls, unsafe.staticFieldOffset(cls.getDeclaredField("instance")), ao);
-		Log.info(cls.getDeclaredConstructors()[0].newInstance());*/
+		definePlatformClassLoader();
+		// defineBootLoader();
 	}
 
 	private static final String interfaceName = "I_HOPE_MAGIC_INTERFACE";
@@ -151,7 +139,7 @@ public class Desktop {
 		byte[]         bytes = javaLangClass.writer.toByteArray();
 		Class<?>       cls   = MyReflect.defineClass(null, bytes);
 		AO_MyInterface ao    = (AO_MyInterface) unsafe.allocateInstance(cls);
-		unsafe.putObject(cls, unsafe.staticFieldOffset(cls.getDeclaredField("instance")), ao);
+		unsafe.putObject(cls, junsafe.objectFieldOffset(cls, "instance"), ao);
 
 		return ao;
 		// return (SetOverride) unsafe.allocateInstance(javaLangClass.define());
@@ -164,11 +152,12 @@ public class Desktop {
 		Class<?> factory = Class.forName("jdk.internal.reflect.ReflectionFactory");
 		// TestMagic.init();
 
-		MyClass<?> myFactoryClass = new MyClass<>(factory.getName() + "AOA_PAPA", factory);
+		final String MY_INTERFACE_CLASS = nativeName(AO_MyInterface.class);
+		MyClass<?>   myFactoryClass     = new MyClass<>(factory.getName() + "AOA_PAPA", factory);
 		myFactoryClass.setFuncSelf("copyMethod", cfw -> {
 			cfw.add(ByteCode.GETSTATIC, interfaceName, "instance", typeToNative(AO_MyInterface.class));
 			cfw.addALoad(1);
-			cfw.addInvoke(ByteCode.INVOKEINTERFACE, nativeName(AO_MyInterface.class), "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
+			cfw.addInvoke(ByteCode.INVOKEINTERFACE, MY_INTERFACE_CLASS, "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
 			cfw.addALoad(1);
 			cfw.add(ByteCode.ARETURN);
 			return 2;
@@ -176,7 +165,7 @@ public class Desktop {
 		myFactoryClass.setFuncSelf("copyField", cfw -> {
 			cfw.add(ByteCode.GETSTATIC, interfaceName, "instance", typeToNative(AO_MyInterface.class));
 			cfw.addALoad(1);
-			cfw.addInvoke(ByteCode.INVOKEINTERFACE, nativeName(AO_MyInterface.class), "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
+			cfw.addInvoke(ByteCode.INVOKEINTERFACE, MY_INTERFACE_CLASS, "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
 			cfw.addALoad(1);
 			cfw.add(ByteCode.ARETURN);
 			return 2;
@@ -184,7 +173,7 @@ public class Desktop {
 		myFactoryClass.setFuncSelf("copyConstructor", cfw -> {
 			cfw.add(ByteCode.GETSTATIC, interfaceName, "instance", typeToNative(AO_MyInterface.class));
 			cfw.addALoad(1);
-			cfw.addInvoke(ByteCode.INVOKEINTERFACE, nativeName(AO_MyInterface.class), "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
+			cfw.addInvoke(ByteCode.INVOKEINTERFACE, MY_INTERFACE_CLASS, "setOverride", "(Ljava/lang/reflect/AccessibleObject;)V");
 			cfw.addALoad(1);
 			cfw.add(ByteCode.ARETURN);
 			return 2;
@@ -192,31 +181,31 @@ public class Desktop {
 		myFactoryClass.setFunc("<init>", null, PUBLIC, void.class);
 
 		// SetMethod.init(myFactoryClass);
-		SetField.init(myFactoryClass);
+		// SetField.init(myFactoryClass);
 
 		Object ins = unsafe.allocateInstance(myFactoryClass.define());
 
+		// ins.getClass().getDeclaredFields();
 		Tools.clone(ReflectionFactory.getReflectionFactory(),
-		            ins, factory);
-		unsafe.putObject(AccessibleObject.class, JDKVars.unsafe
-				.objectFieldOffset(AccessibleObject.class, "reflectionFactory"), ins);
-		unsafe.putObject(factory, JDKVars.unsafe
-				.objectFieldOffset(factory, "soleInstance"), ins);
-		unsafe.putObject(Class.class, JDKVars.unsafe
-				.objectFieldOffset(Class.class, "reflectionFactory"), ins);
+		  ins, factory);
+		unsafe.putObject(AccessibleObject.class, junsafe
+		  .objectFieldOffset(AccessibleObject.class, "reflectionFactory"), ins);
+		unsafe.putObject(factory, junsafe
+		  .objectFieldOffset(factory, "soleInstance"), ins);
+		unsafe.putObject(Class.class, junsafe
+		  .objectFieldOffset(Class.class, "reflectionFactory"), ins);
 	}
-
 
 	/*private static final ObjectMap<String, Class<?>> nameClassMap = ObjectMap.of(
 			"better_js.Desktop", Desktop.class,
 			"better_js.utils.MyReflect", MyReflect.class
 	);*/
 
-	public static ObjectMap<String, Object> hashMap = new ObjectMap<>();
+	public static Set<String> hashSet = new HashSet<>();
 
 	static {
-		hashMap.put("mindustry.core.Platform$1", null);
-		hashMap.put("mindustry.mod.ModClassLoader", null);
+		hashSet.add("mindustry.core.Platform$1");
+		hashSet.add("mindustry.mod.ModClassLoader");
 	}
 
 	/**
@@ -226,9 +215,8 @@ public class Desktop {
 		ClassLoader platformLoader = ClassLoaders.platformClassLoader();
 		Class<?>    superClass     = platformLoader.getClass();
 
-		MyClass<?>  myFactoryClass = new MyClass<>(superClass.getName() + "AOA_PAPA", superClass);
-		boolean[]   inChild        = {false};
-		ClassLoader loader         = Vars.mods.mainLoader();
+		MyClass<?> myFactoryClass = new MyClass<>(superClass.getName() + "AOA_PAPA", superClass);
+		boolean[]  inChild        = {false};
 		myFactoryClass.setFunc("loadClassOrNull", (self, args) -> {
 			Class<?> c = (Class<?>) args.get(args.size() - 1);
 			if (c != null) return c;
@@ -236,15 +224,15 @@ public class Desktop {
 			// try {
 			// 	Time.mark();
 			for (var trace : Thread.currentThread().getStackTrace()) {
-				if (hashMap.containsKey(trace.getClassName())) return null;
+				if (hashSet.contains(trace.getClassName())) return null;
 			}
 			// } finally {
 			// 	Log.info(Time.elapsed());
 			// }
 			String name = (String) args.get(0);
-			if (name.startsWith("lll")) {
-				name = name.substring(3, name.length() - 1);
-			}
+			/* if (name.startsWith("libgdx")) {
+				name = "arc" + name.substring(6);
+			} */
 			try {
 				inChild[0] = true;
 				return loader.loadClass(name);
@@ -255,26 +243,14 @@ public class Desktop {
 			}
 		}, PUBLIC, true, Class.class, String.class, boolean.class);
 		myFactoryClass.setFunc("<init>", null, PUBLIC, Void.TYPE,
-		                       superClass.getDeclaredConstructors()[0].getParameterTypes());
+		  superClass.getDeclaredConstructors()[0].getParameterTypes());
 		// myFactoryClass.writeTo(new Fi("F:/classes/"));
 
-		long off = JDKVars.unsafe.objectFieldOffset(
-				Class.forName("jdk.internal.loader.BuiltinClassLoader"), "parent"
+		long off = junsafe.objectFieldOffset(
+		  Class.forName("jdk.internal.loader.BuiltinClassLoader"), "parent"
 		);
 		Object ins = myFactoryClass.define().getDeclaredConstructors()[0].newInstance(unsafe.getObject(platformLoader, off));
 		unsafe.putObject(ClassLoaders.platformClassLoader(), off, ins);
-		try {
-			Log.info("start");
-			Log.info(new ClassLoader() {}.loadClass("llljava.lang.Classk"));
-		} finally {
-			// unsafe.park(false, Long.MAX_VALUE);
-		}
-		/*unsafe.putObject(cloader, JDKVars.unsafe
-				.objectFieldOffset(cloader, "APP_LOADER"), ins);
-		unsafe.putObject(ClassLoader.class, JDKVars.unsafe
-				.objectFieldOffset(ClassLoader.class, "scl"), ins);*/
-
-		// Log.info(Class.forName("better_js.Desktop", false, ClassLoader.getSystemClassLoader()));
 	}
 
 	/**
@@ -282,16 +258,15 @@ public class Desktop {
 	 **/
 	public static void defineJavaLangAccess() throws Throwable {
 		Class<?> secrets = Tools.orThrow(() -> Class.forName("jdk.internal.access.SharedSecrets"),
-		                                 () -> Class.forName("jdk.internal.misc.SharedSecrets"));
+		  () -> Class.forName("jdk.internal.misc.SharedSecrets"));
 		assert secrets != null;
-		Object superAccess = unsafe.getObject(secrets, JDKVars.unsafe
-				.objectFieldOffset(secrets, "javaLangAccess"));
+		Object superAccess = unsafe.getObject(secrets, junsafe
+		  .objectFieldOffset(secrets, "javaLangAccess"));
 		Class<?> superClass = superAccess.getClass();
 		// TestMagic.init();
 
 		MyClass<?> myFactoryClass = new MyClass<>(superClass.getName() + "AOA_PAPA", superClass);
-		myFactoryClass.setField(PUBLIC | STATIC | FINAL, ClassLoader.class, "loader", Vars.mods.mainLoader());
-		ModClassLoader loader = (ModClassLoader) Vars.mods.mainLoader();
+		myFactoryClass.setField(PUBLIC | STATIC | FINAL, ClassLoader.class, "loader", loader);
 		// ThreadLocal<Boolean> inChild = (ThreadLocal<Boolean>) unsafe.getObject(loader, JDKVars.unsafe.objectFieldOffset(ModClassLoader.class, "inChild"));
 		// Class<?> cl = Desktop.class;
 		myFactoryClass.setFunc("findBootstrapClassOrNull", (self, args) -> {
@@ -311,21 +286,53 @@ public class Desktop {
 
 		// Tools.clone(ReflectionFactory.getReflectionFactory(),
 		// 		ins, factory);
-		unsafe.putObject(secrets, JDKVars.unsafe
-				.objectFieldOffset(secrets, "javaLangAccess"), ins);
-		Class<?> loaders = Class.forName("jdk.internal.loader.ClassLoaders");
-		unsafe.putObject(loaders, JDKVars.unsafe
-				.objectFieldOffset(loaders, "JLA"), ins);
+		unsafe.putObject(secrets, junsafe
+		  .objectFieldOffset(secrets, "javaLangAccess"), ins);
+		unsafe.putObject(ClassLoaders.class, junsafe
+		  .objectFieldOffset(ClassLoaders.class, "JLA"), ins);
+		unsafe.putObject(BootLoader.class, junsafe
+		  .objectFieldOffset(BootLoader.class, "JLA"), ins);
 	}
 
+	public static void defineBootLoader() throws Throwable {
+		Field f = ClassLoaders.class.getDeclaredField("BOOT_LOADER");
+
+		ClassLoader bootLoader = (ClassLoader) f.get(null);
+		Class<?>    superClass     = bootLoader.getClass();
+
+		MyClass<?> myFactoryClass = new MyClass<>(superClass.getName() + "_i_hope", superClass);
+		boolean[]  inChild        = {false};
+		myFactoryClass.setFunc("loadClassOrNull", (self, args) -> {
+			String name = (String) args.get(0);
+			try {
+				inChild[0] = true;
+				return bootLoader.loadClass(name);
+			} catch (ClassNotFoundException e) {
+				return null;
+			} finally {
+				inChild[0] = false;
+			}
+		}, PUBLIC, true, Class.class, String.class, boolean.class);
+		myFactoryClass.setFunc("<init>", null, PUBLIC, Void.TYPE,
+		  superClass.getDeclaredConstructors()[0].getParameterTypes());
+		// myFactoryClass.writeTo(new Fi("F:/classes/"));
+
+		long off = junsafe.objectFieldOffset(
+		  Class.forName("jdk.internal.loader.BuiltinClassLoader"), "ucp"
+		);
+		Object ins = myFactoryClass.define().getDeclaredConstructors()[0].newInstance(unsafe.getObject(bootLoader, off));
+
+		unsafe.putObject(ClassLoaders.class, junsafe.objectFieldOffset(
+		  ClassLoaders.class, "BOOT_LOADER") , ins);
+	}
 
 	public static void clearReflectionFilter() throws Throwable {
 		Class<?> reflect = Class.forName("jdk.internal.reflect.Reflection");
 		// System.out.println(Arrays.toString(reflect.getDeclaredFields()));
 		Lookup lookup = (Lookup) ReflectionFactory.getReflectionFactory().newConstructorForSerialization(
-						Lookup.class, Lookup.class.getDeclaredConstructor(
-								Class.class))
-				.newInstance(reflect);
+			Lookup.class, Lookup.class.getDeclaredConstructor(
+			  Class.class))
+		  .newInstance(reflect);
 		// Class.forName("jdk.internal.reflect.ConstantPool");
 		MethodHandle handle = lookup.findStaticGetter(reflect, "fieldFilterMap", Map.class);
 		((Map) handle.invokeExact()).clear();
@@ -333,6 +340,7 @@ public class Desktop {
 		handle = lookup.findStaticGetter(reflect, "methodFilterMap", Map.class);
 		((Map) handle.invokeExact()).clear();
 	}
+
 
 	@Deprecated
 	public static final class MyMethodAccessor implements MethodAccessor {

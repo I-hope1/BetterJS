@@ -1,7 +1,7 @@
 package better_js.myrhino;
 
 import arc.struct.*;
-import arc.util.OS;
+import arc.util.*;
 import better_js.myrhino.MyNativeJavaObject.Status;
 import better_js.utils.MyReflect;
 import hope_android.FieldUtils;
@@ -193,7 +193,6 @@ public class MyJavaMembers {
 				                   OS.isAndroid ? FieldUtils.getFieldOffset(field)
 						                   : isStatic ? unsafe.staticFieldOffset(field) : unsafe.objectFieldOffset(field),
 				                   javaValue, field.getType());
-
 			} catch (IllegalArgumentException argEx) {
 				throw ErrorThrow.reportRuntimeError3(
 						"msg.java.internal.field.type",

@@ -1,13 +1,12 @@
 package better_js.reflect;
 
-import arc.util.OS;
 import jdk.internal.misc.Unsafe;
 
 /**
  * 一些jdk包下的实例
  **/
 public class JDKVars {
-	public static final Unsafe unsafe = Unsafe.getUnsafe();
+	public static final Unsafe   junsafe = Unsafe.getUnsafe();
 	public static final Class<?> MagicAccessorImpl;
 	static {
 		try {

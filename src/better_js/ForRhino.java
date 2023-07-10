@@ -15,12 +15,9 @@ import java.lang.reflect.*;
 
 import static better_js.BetterJSRhino.status;
 import static better_js.Main.*;
-import static rhino.Context.FEATURE_ENHANCED_JAVA_ACCESS;
+import static rhino.Context.*;
 
 public class ForRhino {
-	// public static FieldUtils fieldUtils = null;
-//	public static final Map           NORMAL_PRIVATE_MAP = new ConcurrentHashMap<>(16, 0.75f, 1);
-//	public static final ObjectMap     MY_PRIVATE_MAP     = new ObjectMap<>();
 	public static final long          classCacheOff;
 	static              long          wrapFactoryOff;
 	public static       MyWrapFactory wrapFactory        = new MyWrapFactory();
@@ -53,17 +50,17 @@ public class ForRhino {
 		Constructor<?> cons = factoryMyClass.define(Vars.mods.mainLoader()).getDeclaredConstructors()[0];
 		Fi             fi   = Vars.tmpDirectory.child("wprhinokfactorys");
 		fi.mkdirs();
-		factory = (ContextFactory) (OS.isAndroid ? cons.newInstance(fi.file())
+		ScriptInstaller.factory = (ContextFactory) (OS.isAndroid ? cons.newInstance(fi.file())
 				: cons.newInstance());
 		// 设置全局的factory
 		if (!ContextFactory.hasExplicitGlobal()) {
-			ContextFactory.getGlobalSetter().setContextFactoryGlobal(factory);
+			ContextFactory.getGlobalSetter().setContextFactoryGlobal(ScriptInstaller.factory);
 		} else {
 			MyReflect.setValue(null,
 			                   ContextFactory.class.getDeclaredField("global"),
-			                   factory, true);
+			 ScriptInstaller.factory, true);
 		}
-		return factory;
+		return ScriptInstaller.factory;
 	}
 
 	/**
@@ -112,6 +109,7 @@ public class ForRhino {
 		if (featureIndex == FEATURE_ENHANCED_JAVA_ACCESS) {
 			return status != Status.normal;
 		}
+		// if (featureIndex == FEATURE_MEMBER_EXPR_AS_FUNCTION_NAME) return true;
 		return ((MyContextFactory) self).super$_hasFeature(cx, featureIndex);
 	}
 
@@ -129,7 +127,6 @@ public class ForRhino {
 	}
 
 	public static class MyWrapFactory extends WrapFactory {
-//		ObjectMap<Status, ObjectMap<Object, Scriptable>> cache = new ObjectMap<>();
 		public Scriptable wrapJavaClass(Context cx, Scriptable scope, Class<?> javaClass) {
 			return new MyNativeJavaClass(scope, javaClass);
 		}

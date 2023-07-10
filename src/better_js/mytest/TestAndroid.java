@@ -3,9 +3,11 @@ package better_js.mytest;
 import arc.files.Fi;
 import arc.util.*;
 import better_js.Main;
+import better_js.android.TestPrivate;
 import better_js.utils.*;
 import better_js.utils.ByteCodeTools.MyClass;
 // import com.esotericsoftware.reflectasm.FieldAccess;
+import better_js.utils.Tools.NotTimeException;
 import dalvik.system.*;
 import hope_android.FieldUtils;
 import interfaces.InvokeFunc;
@@ -25,6 +27,16 @@ import static better_js.Main.unsafe;
 
 public class TestAndroid {
 
+	private static final Class<?> CLS_PathList;
+
+	static {
+		try {
+			CLS_PathList = Class.forName("dalvik.system.DexPathList");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static void main(String[] args) throws Throwable {
 		// var tmp = new MyClass<>("hope_android/FieldUtils", Object.class);
 		// tmp.addInterface(FieldUtils.class);
@@ -35,20 +47,31 @@ public class TestAndroid {
 		}, Modifier.PUBLIC | Modifier.FINAL, int.class, Field.class);*/
 
 		// test
-		testField();
-		testMethod();
+		// testField();
+		// testMethod();
+		// TestPrivate.test();
+		/* Time.runTask(1, () -> {
+			try {
+				Field f = ClassLoader.class.getDeclaredField("parent");
+				f.setAccessible(true);
+				f.set(Context.class.getClassLoader(), Vars.mods.mainLoader());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}); */
 		if (true) return;
-		Log.info(ItemSelection.class);
+		// Log.info(ItemSelection.class);
 		Tools.forceRun(() -> {
+			if (Vars.mods.getMod(Main.class) == null) throw new NotTimeException();
 			Log.info("======hotfix=====");
-			Fi target = Vars.mods.getMod(Main.class).root.child("AAKPA.jar");
-			Fi toFile = Vars.tmpDirectory.child("padcjikzn.jar");
-			target.copyTo(toFile);
+			Fi target = Vars.mods.getMod(Main.class).root.child("classes.dex");
+			// Fi toFile = Vars.tmpDirectory.child("padcjikzn.jar");
+			// target.copyTo(toFile);
 
 			ClassLoader pathLoader = Vars.class.getClassLoader();
 			/*Log.info(pathLoader);
 			Log.info(pathLoader.getParent());*/
-			BaseDexClassLoader base = new BaseDexClassLoader(toFile.path(), null, null, pathLoader.getParent()) {
+			BaseDexClassLoader base = new BaseDexClassLoader(target.path(), null, null, pathLoader.getParent()) {
 				private boolean inChild;
 
 				@Override
@@ -78,10 +101,10 @@ public class TestAndroid {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-			// base.loadClass("mindustry.world.blocks.ItemSelection"+);
+			// base.loadClass("mindustry.world.blocks.ItemSelection");
 			// Log.info(ItemSelection.class.hashCode());
 			try {
-				VMRuntime.registerAppInfo(Vars.tmpDirectory.child("dexCache").path(), new String[]{toFile.path()});
+				VMRuntime.registerAppInfo(Vars.tmpDirectory.child("dexCache").path(), new String[]{target.path()});
 			} catch (Throwable e) {
 				Log.err(e);
 			}
@@ -113,18 +136,26 @@ public class TestAndroid {
 	}
 
 	public static void testMethod() throws Throwable {
-		TestAndroid ins = new TestAndroid();
+		// TestAndroid ins = new TestAndroid();
+		// InvokeFunc acc = new MyMethodAccessor(m).generateMethod();
+		// float[]  count = {0, 0, 0};
+		// Method   m     = TestAndroid.class.getDeclaredMethod("aMethod");
+		// m.setAccessible(true);
+		Object[] ARGS = {};
+
+		int amount = (int) 1E5;
 		Time.mark();
 		Runnable r = TestAndroid::aMethod;
-		// InvokeFunc acc = new MyMethodAccessor(m).generateMethod();
-		// Object[] ARR = {};
-		for (int i = 0; i < 1E5; i++) {
+		for (int i = 0; i < amount; i++) {
 			// acc.invoke_2rp0dmwi2la(ins, ARR);
+			// m.invoke(null, ARGS);
+			// handle.invokeExact();
+			// aMethod();
 			r.run();
 		}
-		Log.info("interface:" + Time.elapsed());
+		Log.info("inter:" + Time.elapsed());
 		Time.mark();
-		for (int i = 0; i < 1E5; i++) {
+		for (int i = 0; i < amount; i++) {
 			// m.invoke(ins);
 			bMethod();
 		}
@@ -151,9 +182,9 @@ public class TestAndroid {
 		// MyReflect.setValue(isStatic ? f.getDeclaringClass() : ins, FieldUtils.getFieldOffset(fb), 0, f.getType());
 		// Log.info("unsafe-2: @ms", Time.elapsed());
 		// if (true) return;
-		double times = 2e4F;
+		double times = 2E6;
 		Time.mark();
-		for (int i = 0; i < times; i++) {
+		for (float i = 0; i < times; i++) {
 			f.set(ins, i);
 		}
 		Log.info("field: @ms, res: @", Time.elapsed() / times, a);
@@ -161,12 +192,8 @@ public class TestAndroid {
 		// StringBuilder sb = new StringBuilder();
 		// float last = 0;
 		Time.mark();
-		for (int i = 0; i < times; i++) {
-			// Time.mark();
+		for (float i = 0; i < times; i++) {
 			MyReflect.setValue(isStatic ? f.getDeclaringClass() : ins, FieldUtils.getFieldOffset(f), i, f.getType());
-			// float now = Time.elapsed();
-			// sb.append(now).append('\t').append(now - last).append('\n');
-			// last = now;
 		}
 		// Log.info(sb.toString());
 		Log.info("unsafe: @ms, res: @", Time.elapsed() / times, a);
@@ -175,8 +202,8 @@ public class TestAndroid {
 		Log.info(Modifier.toString(cls.getModifiers()));*/
 	}
 
-	static int a = 1;
-	static int b = 1;
+	static double a = 1;
+	static double b = 1;
 
 	public static void aMethod() {
 	}
@@ -192,12 +219,13 @@ public class TestAndroid {
 		}
 		try {
 			//反射获取到DexPathList属性对象pathList;
-			Field  field    = ReflectUtils.findField(classLoader, "pathList");
+			Field  field    = BaseDexClassLoader.class.getDeclaredField("pathList");
+			field.setAccessible(true);
 			Object pathList = field.get(classLoader);
 
 
 			//3.1、把补丁包patch.dex转化为Element[]  (patch)
-			Method method = ReflectUtils.findMethod(pathList, "makeDexElements", List.class, File.class, List.class, ClassLoader.class);
+			Method method = CLS_PathList.getDeclaredMethod("makeDexElements", List.class, File.class, List.class, ClassLoader.class);
 			method.setAccessible(true);
 			//构建第一个参数
 			ArrayList<File> patchs = new ArrayList<>();
@@ -209,14 +237,15 @@ public class TestAndroid {
 
 
 			//3.2获得pathList的dexElements属性（old）
-			Field    dexElementsField = ReflectUtils.findField(pathList, "dexElements");
+			Field    dexElementsField = CLS_PathList.getDeclaredField("dexElements");
+			dexElementsField.setAccessible(true);
 			Object[] dexElements      = (Object[]) dexElementsField.get(pathList);
 
 			//3.3、patch+old合并，并反射赋值给pathList的dexElements
 			Object[] newElements = (Object[]) Array.newInstance(patchElements.getClass().getComponentType(), patchElements.length + dexElements.length);
 			System.arraycopy(patchElements, 0, newElements, 0, patchElements.length);
 			System.arraycopy(dexElements, 0, newElements, patchElements.length, dexElements.length);
-			Log.info(Arrays.toString(newElements));
+			// Log.info(Arrays.toString(newElements));
 			dexElementsField.set(pathList, newElements);
 		} catch (Exception e) {
 			Log.err(e);

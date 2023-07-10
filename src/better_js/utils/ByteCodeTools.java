@@ -303,7 +303,7 @@ public class ByteCodeTools {
 			// writeTo(Vars.tmpDirectory.child("classes").child(adapterName.substring(adapterName.lastIndexOf('/')) + ".class"));
 
 			// Time.mark();
-			Class<?> base = MyReflect.defineClass(adapterName, superClass, writer.toByteArray());
+			Class<?> base = MyReflect.defineClass(adapterName, superClass.getClassLoader(), writer.toByteArray());
 
 			if (!queues.isEmpty()) {
 				ObjectMap<String, Field> map = OS.isAndroid ? Seq.with(base.getDeclaredFields())

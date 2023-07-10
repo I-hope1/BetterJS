@@ -2,8 +2,10 @@ package better_js.utils;
 
 import arc.util.OS;
 import better_js.Main;
+import better_js.android.DexLoader.*;
 import better_js.reflect.JDKVars;
 import hope_android.FieldUtils;
+import ihope_lib.*;
 import mindustry.Vars;
 import mindustry.android.AndroidRhinoContext.AndroidContextFactory;
 import rhino.*;
@@ -12,17 +14,19 @@ import sun.misc.Unsafe;
 import java.lang.reflect.*;
 import java.security.ProtectionDomain;
 
+import static better_js.Desktop.lookup;
+
 public class MyReflect {
 	public static final Unsafe unsafe = Main.unsafe;
 
-	static Field accessFlagsCls;
+	static Field accessFlagsCls, accessFlagsExec;
 
 	static {
 		if (OS.isAndroid) try {
 			accessFlagsCls = Class.class.getDeclaredField("accessFlags");
 			accessFlagsCls.setAccessible(true);
-			// accessFlagsExec = Executable.class.getDeclaredField("accessFlags");
-			// accessFlagsExec.setAccessible(true);
+			accessFlagsExec = Executable.class.getDeclaredField("accessFlags");
+			accessFlagsExec.setAccessible(true);
 		} catch (NoSuchFieldException e) {
 			throw new RuntimeException(e);
 		}
@@ -31,39 +35,82 @@ public class MyReflect {
 	/**
 	 * only for android
 	 **/
-	public static void setPublic(Class<?> cls) {
-		try {
-			int flags = accessFlagsCls.getInt(cls);
+	public static void setPublic(Class<?> exec) {
+		if (OS.isAndroid) try {
+			int flags = accessFlagsCls.getInt(exec);
 			flags &= 0xFFFF;
 			flags &= ~Modifier.FINAL;
 			flags &= ~Modifier.PRIVATE;
 			flags |= Modifier.PUBLIC;
-			accessFlagsCls.setInt(cls, flags & 0xFFFF);
+			accessFlagsCls.setInt(exec, flags & 0xFFFF);
+		} catch (Exception ignored) {}
+	}
+	/**
+	 * only for android
+	 **/
+	public static void setPublic(Executable cls) {
+		if (OS.isAndroid) try {
+			int flags = accessFlagsExec.getInt(cls);
+			flags &= 0xFFFF;
+			flags &= ~Modifier.FINAL;
+			flags &= ~Modifier.PRIVATE;
+			flags |= Modifier.PUBLIC;
+			accessFlagsExec.setInt(cls, flags);
 		} catch (Exception ignored) {}
 	}
 
+	public static ClassLoader loader;
+	public static ClassLoader dexClassLoader;
+	public static ClassDefiner definer;
+	static {
+		if (!OS.isAndroid) loadDefiner();
+	}
+	static void loadDefiner(){
+		definer = ClassDefinerUnsafe.load(unsafe);
+		if (definer == null) {
+			definer = ClassDefinerLookup.load(lookup);
+		}
+	}
 	public static Class<?> defineClass(String name, Class<?> superClass, byte[] bytes) {
-		/*try {
-			Class.forName(superClass.getName(), false, loader);
-		} catch (Throwable e) {
-			loader.addChild(superClass.getClassLoader());
-			Log.info("ok");
-		}*/
 		if (OS.isAndroid) {
+			/* ModClassLoader loader = (ModClassLoader) Vars.mods.mainLoader();
+			try {
+				Class.forName(superClass.getName(), false, loader);
+			} catch (Throwable e) {
+				loader.addChild(superClass.getClassLoader());
+				Log.info("ok");
+			} */
 			int mod = superClass.getModifiers();
 			if (/*Modifier.isFinal(mod) || */!Modifier.isPublic(mod)) {
 				setPublic(superClass);
 			}
 			try {
-				return ((GeneratedClassLoader) ((AndroidContextFactory) ContextFactory.getGlobal())
-						.createClassLoader(superClass.getClassLoader()))
-						.defineClass(name, bytes);
+				// ClassLoader parent   = superClass.getClassLoader();
+				// Object      pathList = unsafe.getObject(parent, DexLoader.pathList);
+				// Object element = Array.get(unsafe.getObject(pathList, DexLoader.elements), 0);
+				// Object dexFile = unsafe.getObject(element, DexLoader.dexFile);
+
+				if (dexClassLoader == null) dexClassLoader = new InMemoryAndroidClassLoader(null);
+				((BaseAndroidClassLoader)dexClassLoader).definingContext = superClass.getClassLoader();
+						// Object mCookie = unsafe.getObject(dexFile, DexLoader.mCookie);
+						// Class<?> cl = (Class<?>) DexLoader.defineClassNative.invoke(null, name, parent, mCookie, dexFile);
+				Class<?> cl = ((GeneratedClassLoader)dexClassLoader).defineClass(name, bytes);
+				// Log.info(cl);
+				return cl;
+				/* return (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? new InMemoryAndroidClassLoader(parent)
+                : new FileAndroidClassLoader(parent, ((AndroidApplication)Vars.platform).getCacheDir())
+				).defineClass(name, bytes); */
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
 		} else {
 			try {
-				return JDKVars.unsafe.defineClass0(name, bytes, 0, bytes.length, superClass.getClassLoader(), superClass.getProtectionDomain());
+				return JDKVars.junsafe.defineClass0(name, bytes, 0, bytes.length, superClass.getClassLoader(), null);
+				/* return definer.defineClass(name, superClass, bytes,
+				  new Object[]{
+					superClass.getClassLoader(), MyJavaAdapter.class.getClassLoader()
+				}); */
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
 			}
@@ -82,7 +129,7 @@ public class MyReflect {
 			}
 		} else {
 			try {
-				return JDKVars.unsafe.defineClass0(null, bytes, 0, bytes.length, loader, null);
+				return JDKVars.junsafe.defineClass0(null, bytes, 0, bytes.length, loader, null);
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
 			}
@@ -92,8 +139,8 @@ public class MyReflect {
 
 	public static Class<?> defineClass(ClassLoader loader, byte[] bytes, ProtectionDomain pd) {
 		try {
-			return JDKVars.unsafe.defineClass0(null, bytes, 0, bytes.length,
-			                                   loader, pd);
+			return JDKVars.junsafe.defineClass0(null, bytes, 0, bytes.length,
+					loader, pd);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -130,19 +177,19 @@ public class MyReflect {
 
 	public static void setValue(Object o, long off, Object value, Class<?> type) {
 		if (int.class == type) {
-			setInt(o, off, value);
+			unsafe.putInt(o, off, ((Number) value).intValue());
 		} else if (float.class == type) {
-			setFloat(o, off, value);
+			unsafe.putFloat(o, off, ((Number) value).floatValue());
 		} else if (double.class == type) {
-			setDouble(o, off, value);
+			unsafe.putDouble(o, off, ((Number) value).doubleValue());
 		} else if (long.class == type) {
-			setLong(o, off, value);
+			unsafe.putLong(o, off, ((Number) value).longValue());
 		} else if (char.class == type) {
 			unsafe.putChar(o, off, (char) value);
 		} else if (byte.class == type) {
-			unsafe.putByte(o, off, (byte) value);
+			unsafe.putByte(o, off, ((Number) value).byteValue());
 		} else if (short.class == type) {
-			unsafe.putShort(o, off, (short) value);
+			unsafe.putShort(o, off, ((Number) value).shortValue());
 		} else if (boolean.class == type) {
 			unsafe.putBoolean(o, off, (boolean) value);
 		} else {
@@ -286,6 +333,7 @@ public class MyReflect {
 			return unsafe.getObject(o, off);
 		}
 	}
+	public static native void extend();
 	/** 是否只占一个字节 */
 	public static boolean isSingle(Class<?> cls) {
 		return cls != long.class && cls != double.class;

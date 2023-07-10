@@ -1,7 +1,6 @@
 package better_js.mytest;
 
 import better_js.reflect.JDKVars;
-import better_js.utils.*;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.vm.annotation.ForceInline;
@@ -14,7 +13,7 @@ import static better_js.reflect.JDKVars.MagicAccessorImpl;
 import static better_js.utils.ByteCodeTools.*;
 
 public class TestMagic {
-	public static final Unsafe unsafe = JDKVars.unsafe;
+	public static final Unsafe unsafe = JDKVars.junsafe;
 	public static void init() throws Exception {
 		MyClass<?> magic = new MyClass<>(MagicAccessorImpl.getName() + "_1", MagicAccessorImpl);
 		magic.addInterface(TestInterface.class);

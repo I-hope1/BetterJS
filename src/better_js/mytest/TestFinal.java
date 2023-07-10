@@ -2,17 +2,35 @@ package better_js.mytest;
 
 import better_js.*;
 import better_js.reflect.JDKVars;
-import better_js.utils.*;
 import better_js.utils.ByteCodeTools.MyClass;
-import mindustry.Vars;
 
 public class TestFinal {
 	public static void main(String[] args) throws Throwable {
-		Desktop.main(args);
-		MyClass<?> f = new MyClass<>(FINAL.class.getName() + "1", FINAL.class);
+		Desktop.init(getLoader());
+		MyClass<?> f = new MyClass<>(Child.class.getName() + "1", Child.class);
 		byte[] bytes = f.writer.toByteArray();
-		JDKVars.unsafe.defineClass0(null, bytes, 0, bytes.length, Vars.mods.mainLoader(), null);
+		JDKVars.junsafe.defineClass0(null, bytes, 0, bytes.length, getLoader(), null);
+	}
+	private static ClassLoader getLoader() {
+		return TestFinal.class.getClassLoader();
 	}
 
-	public static final class FINAL {}
+	public static class F2 extends F {
+			public void a() {
+				super.a();
+			}
+		}
+
+	public static class F extends Child {
+		public void a(){
+			super.a();
+		}
+	}
+	public static class Child {
+		public void a(){
+		}
+		private Child(){
+			a();
+		}
+	}
 }
