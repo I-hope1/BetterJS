@@ -105,8 +105,6 @@ public class Desktop {
 		myInterface = defineInterfaceClass();
 		defineReflectionFactory();
 
-		// defineJavaLangAccess();
-		definePlatformClassLoader();
 		// defineBootLoader();
 	}
 
