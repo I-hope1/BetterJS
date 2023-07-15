@@ -634,7 +634,7 @@ public class MyNativeJavaObject extends NativeJavaObject
 	static void reportConversionError(Object value, Class<?> type) {
 		// It uses String.valueOf(value), not value.toString() since
 		// value can be null, bug 282447.
-		throw ErrorThrow.reportRuntimeError2(
+		throw ExceptionReporter.reportRuntimeError2(
 				"msg.conversion.not.allowed",
 				String.valueOf(value),
 				MyJavaMembers.javaSignature(type));

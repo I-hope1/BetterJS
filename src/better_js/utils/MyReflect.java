@@ -61,42 +61,16 @@ public class MyReflect {
 
 	public static ClassLoader loader;
 	public static ClassLoader dexClassLoader;
-	public static ClassDefiner definer;
-	static {
-		if (!OS.isAndroid) loadDefiner();
-	}
-	static void loadDefiner(){
-		definer = ClassDefinerUnsafe.load(unsafe);
-		if (definer == null) {
-			definer = ClassDefinerLookup.load(lookup);
-		}
-	}
 	public static Class<?> defineClass(String name, Class<?> superClass, byte[] bytes) {
 		if (OS.isAndroid) {
-			/* ModClassLoader loader = (ModClassLoader) Vars.mods.mainLoader();
-			try {
-				Class.forName(superClass.getName(), false, loader);
-			} catch (Throwable e) {
-				loader.addChild(superClass.getClassLoader());
-				Log.info("ok");
-			} */
 			int mod = superClass.getModifiers();
 			if (/*Modifier.isFinal(mod) || */!Modifier.isPublic(mod)) {
 				setPublic(superClass);
 			}
 			try {
-				// ClassLoader parent   = superClass.getClassLoader();
-				// Object      pathList = unsafe.getObject(parent, DexLoader.pathList);
-				// Object element = Array.get(unsafe.getObject(pathList, DexLoader.elements), 0);
-				// Object dexFile = unsafe.getObject(element, DexLoader.dexFile);
-
 				if (dexClassLoader == null) dexClassLoader = new InMemoryAndroidClassLoader(null);
 				((BaseAndroidClassLoader)dexClassLoader).definingContext = superClass.getClassLoader();
-						// Object mCookie = unsafe.getObject(dexFile, DexLoader.mCookie);
-						// Class<?> cl = (Class<?>) DexLoader.defineClassNative.invoke(null, name, parent, mCookie, dexFile);
-				Class<?> cl = ((GeneratedClassLoader)dexClassLoader).defineClass(name, bytes);
-				// Log.info(cl);
-				return cl;
+				return ((GeneratedClassLoader)dexClassLoader).defineClass(name, bytes);
 				/* return (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new InMemoryAndroidClassLoader(parent)
                 : new FileAndroidClassLoader(parent, ((AndroidApplication)Vars.platform).getCacheDir())
@@ -107,10 +81,6 @@ public class MyReflect {
 		} else {
 			try {
 				return JDKVars.junsafe.defineClass0(name, bytes, 0, bytes.length, superClass.getClassLoader(), null);
-				/* return definer.defineClass(name, superClass, bytes,
-				  new Object[]{
-					superClass.getClassLoader(), MyJavaAdapter.class.getClassLoader()
-				}); */
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
 			}

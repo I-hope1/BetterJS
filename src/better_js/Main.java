@@ -128,7 +128,8 @@ public class Main extends Mod {
 		}
 		Method methodM = Class.class.getDeclaredMethod("getDeclaredMethod", String.class, Class[].class);
 		methodM.setAccessible(true);
-		Method m2 = (Method) methodM.invoke(VMRuntime.class, "setHiddenApiExemptions",
+		Method m2 = (Method) methodM.invoke(VMRuntime.class,
+		 "setHiddenApiExemptions",
 		 new Class[]{String[].class});
 		m2.setAccessible(true);
 		m2.invoke(VMRuntime.getRuntime(), (Object) new String[]{"L"});

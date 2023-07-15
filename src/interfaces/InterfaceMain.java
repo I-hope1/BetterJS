@@ -17,13 +17,14 @@ public class InterfaceMain {
 			throw new RuntimeException(e);
 		}
 	}
-	static final Method m;
-	static final MethodHandle handle;
-	static MethodAccessor nativeAcc;
+
+	static final Method         m;
+	static final MethodHandle   handle;
+	static       MethodAccessor nativeAcc;
 
 	static {
 		try {
-            m = InterfaceMain.class.getDeclaredMethod("apiofqi");
+			m = InterfaceMain.class.getDeclaredMethod("apiofqi");
 			handle = Desktop.lookup.unreflect(m);
 			nativeAcc = getReflectionFactory().newMethodAccessor(m);
 		} catch (Exception e) {
@@ -36,8 +37,6 @@ public class InterfaceMain {
 	}
 
 	public static void main(String[] args) throws Throwable {
-		// invoke();
-
 		Release.main(args);
 	}
 	static Runnable r;

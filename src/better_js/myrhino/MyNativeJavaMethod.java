@@ -1,6 +1,5 @@
 package better_js.myrhino;
 
-import arc.util.Log;
 import rhino.*;
 
 import java.lang.reflect.*;
@@ -128,7 +127,7 @@ public class MyNativeJavaMethod extends BaseFunction {
 			Class<?> c = methods[0].method().getDeclaringClass();
 			String sig = c.getName() + '.' + getFunctionName() + '(' +
 									 scriptSignature(args) + ')';
-			throw ErrorThrow.reportRuntimeError1("msg.java.no_such_method", sig);
+			throw ExceptionReporter.reportRuntimeError1("msg.java.no_such_method", sig);
 		}
 
 		MyMemberBox meth     = methods[index];
@@ -434,11 +433,11 @@ public class MyNativeJavaMethod extends BaseFunction {
 		String      memberClass    = firstFitMember.getDeclaringClass().getName();
 
 		if (methodsOrCtors[0].isCtor()) {
-			throw ErrorThrow.reportRuntimeError3(
+			throw ExceptionReporter.reportRuntimeError3(
 			 "msg.constructor.ambiguous",
 			 memberName, scriptSignature(args), buf.toString());
 		}
-		throw ErrorThrow.reportRuntimeError4(
+		throw ExceptionReporter.reportRuntimeError4(
 		 "msg.method.ambiguous", memberClass,
 		 memberName, scriptSignature(args), buf.toString());
 	}

@@ -179,7 +179,7 @@ public class MyJavaMembers {
 			if (!(member instanceof Field)) {
 				String str = (member == null) ? "msg.java.internal.private"
 						: "msg.java.method.assign";
-				throw ErrorThrow.reportRuntimeError1(str, name);
+				throw ExceptionReporter.reportRuntimeError1(str, name);
 			}
 			Field  field     = (Field) member;
 			Object javaValue = Context.jsToJava(value, field.getType());
@@ -194,7 +194,7 @@ public class MyJavaMembers {
 						                   : isStatic ? unsafe.staticFieldOffset(field) : unsafe.objectFieldOffset(field),
 				                   javaValue, field.getType());
 			} catch (IllegalArgumentException argEx) {
-				throw ErrorThrow.reportRuntimeError3(
+				throw ExceptionReporter.reportRuntimeError3(
 						"msg.java.internal.field.type",
 						value.getClass().getName(), field,
 						javaObject.getClass().getName());

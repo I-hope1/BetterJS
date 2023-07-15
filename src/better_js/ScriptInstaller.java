@@ -1,13 +1,15 @@
 package better_js;
 
 import arc.Core;
+import arc.files.*;
 import arc.struct.Seq;
 import arc.util.*;
 import better_js.Main.*;
+import better_js.android.DexLoader;
 import better_js.myrhino.*;
 import better_js.myrhino.MyNativeJavaObject.Status;
+import better_js.utils.MyReflect;
 import mindustry.Vars;
-import modtools.utils.JSFunc;
 import rhino.*;
 
 import java.lang.invoke.MethodHandle;
@@ -35,16 +37,31 @@ public class ScriptInstaller {
 			args[0] instanceof NativeJavaObject ? ((NativeJavaObject) args[0]).unwrap() : args[0]
 		 ), (ScriptableObject) args[1])
 		);
-		// cloader = new MyFunc((cx, scope, args) -> MyReflect.loader = (ClassLoader) ((Wrapper)args[0]).unwrap());
-		// Token.printTrees = true;
 
 		if (!OS.isAndroid) {
 			try {
 				Desktop.main(null);
+				// init MyJavaAdapter
+				MyReflect.defineClass(JavaAdapter.class.getClassLoader(),
+				 Objects.requireNonNull(Main.class.getClassLoader()
+					 .getResourceAsStream("better_js/myrhino/MyJavaAdapter.class"))
+					.readAllBytes());
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
-		}
+		} else Time.runTask(0, () -> {
+			Fi fi   = Vars.mods.getMod(Main.class).root.child("AndroidLib.jar");
+			Fi toFi = Vars.tmpDirectory.child(fi.name());
+			fi.copyTo(toFi);
+			/* fi = new ZipFi(toFi).child("classes.dex");
+			toFi = Vars.tmpDirectory.child(fi.name());
+			fi.copyTo(toFi); */
+			try {
+				DexLoader.defineClassWithFile(toFi.file(), JavaAdapter.class.getClassLoader());
+			} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+		});
 		try {
 			Main.clearReflectionFilter();
 		} catch (Throwable ex) {
@@ -83,46 +100,42 @@ public class ScriptInstaller {
 		MyFunc handle_invoker = new MyFunc((cx, scope, args) -> {
 			try {
 				Object[] _args = (Object[]) Array.newInstance(Object.class, args.length - 1);
+
+				MethodHandle handle = (MethodHandle) ((NativeJavaObject) args[0]).unwrap();
 				for (int i = 0; i < _args.length; i++) {
-					if (args[i + 1] instanceof NativeJavaObject v) {
-						_args[i] = v.unwrap();
-					} else {
-						_args[i] = args[i + 1];
-					}
+					_args[i] = Context.jsToJava(args[i + 1], handle.type().parameterType(i));
 				}
-				return ((MethodHandle) ((NativeJavaObject) args[0]).unwrap())
-				 .invokeWithArguments(_args);
+				return handle.invokeWithArguments(_args);
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
 		});
 
 		MyFunc del = new MyFunc((cx, scope, args) -> {
-			if (args[0] instanceof NativeJavaObject obj) {
-				try {
-					Field f = NativeJavaObject.class.getDeclaredField("members");
-					f.setAccessible(true);
-					Object members = f.get(obj);
-					f = Class.forName("rhino.JavaMembers").getDeclaredField("ctors");
-					f.setAccessible(true);
-					NativeJavaMethod ctors = (NativeJavaMethod) f.get(members);
-					f = NativeJavaMethod.class.getDeclaredField("methods");
-					f.setAccessible(true);
-					Object[] arr       = (Object[]) f.get(ctors);
-					Class<?> memberBox = Class.forName("rhino.MemberBox");
-					Field    f2        = memberBox.getDeclaredField("memberObject");
-					f2.setAccessible(true);
-					Seq    seq    = new Seq<>();
-					Object unwrap = ((NativeJavaObject) args[1]).unwrap();
-					for (Object o : arr) {
-						if (!unwrap.equals(f2.get(o))) seq.add(o);
-					}
-					JSFunc.showInfo(f2.get(arr[2]));
-					JSFunc.showInfo(unwrap);
-					f.set(ctors, seq.toArray(memberBox));
-				} catch (Exception e) {
-					throw new RuntimeException(e);
+			if (!(args[0] instanceof NativeJavaObject obj)) return null;
+			try {
+				Field f = NativeJavaObject.class.getDeclaredField("members");
+				f.setAccessible(true);
+				Object members = f.get(obj);
+				f = Class.forName("rhino.JavaMembers").getDeclaredField("ctors");
+				f.setAccessible(true);
+				NativeJavaMethod ctors = (NativeJavaMethod) f.get(members);
+				f = NativeJavaMethod.class.getDeclaredField("methods");
+				f.setAccessible(true);
+				Object[] arr       = (Object[]) f.get(ctors);
+				Class<?> memberBox = Class.forName("rhino.MemberBox");
+				Field    f2        = memberBox.getDeclaredField("memberObject");
+				f2.setAccessible(true);
+				Seq    seq    = new Seq<>();
+				Object unwrap = ((NativeJavaObject) args[1]).unwrap();
+				for (Object o : arr) {
+					if (!unwrap.equals(f2.get(o))) seq.add(o);
 				}
+				// JSFunc.showInfo(f2.get(arr[2]));
+				// JSFunc.showInfo(unwrap);
+				f.set(ctors, seq.toArray(memberBox));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 			return null;
 		});

@@ -22,11 +22,7 @@ tasks.withType(JavaCompile) {
 
 group 'org.example'
 version '1.0'
-sourceSets {
-	main {
-		java.srcDirs = ["src"]
-	}
-}
+sourceSets.main.java.srcDirs = ["src"]
 targetCompatibility = 11
 sourceCompatibility = 11
 repositories {
@@ -42,71 +38,49 @@ dependencies {
 	annotationProcessor "com.github.EB-wilson.UniverseCore:annotations:$uncVersion"
 	implementation 'com.jakewharton.android.repackaged:dalvik-dx:11.0.0_r3'
 //	classpath 'com.android.tools.build:gradle:7.2.1'
-//	implementation 'com.github.eclipsesource:J2V8:00dddaa31a'
 	compileOnly files("F:/files/mindustry/a/mdt-ac-1.0.jar")
 	compileOnly files(
 			MdtDataDir + "/Mindustry_android.jar",
-//			"E:/Program Files/AndroidStudio/sdk/platforms/android-32/android.jar",
 			"F:/files/java/sdk/platforms/android-28/android.jar",
 			"libs/mod-tools.jar",
 			"libs/libs.jar",
 			"E:/Users/ASUS/Desktop/Mods/Android_dalvik-1.0.jar",
 	)
 	implementation files(
-//			"libs/asm-5.1.jar",
-//			"libs/ReflectionFX-1.9.4.jar",
-			"E:/Users/ASUS/Desktop/Mods/mod-tools136/ClassDefiner/unsafe/ClassDefiner-1.0.jar",
+			"E:/Users/ASUS/Desktop/Mods/localLib/ClassDefiner/unsafe/ClassDefiner-1.0.jar",
 			"E:/Users/ASUS/Desktop/Mods/TmpMods/AndroidField/AndroidField.jar",
 	)
-//	implementation files("libs/reflectasm.jar")
 
 	def mindustryVersion = 'v144.1'
 //	implementation "com.github.Anuken.Arc:arc-core:$mindustryVersion"
 //	implementation "com.github.Anuken.Mindustry:core:$mindustryVersion"
 	compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
 	compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
-//	compileOnly files("assets/invokeFunc.jar")
 }
 
 mindustry {
-	dependency {
-//        mindustry version: '22810'
-		// To use jitpack, https://jitpack.io/#anuken/mindustryjitpack
-		mindustry version: 'v143'
-		arc version: 'v143'
-	}
-	client {
-//		official version: 'v138'
-//		fromLocal MdtDataDir + "/Mindustry.jar"
-//		args += ['-debug']
-	}
-	meta << ModMeta(
-			version: VERSION
-	)
-	meta.displayName = "better_js"
+	meta.version = VERSION
+	meta.name = meta.displayName = "better_js"
 	def name = project.archivesBaseName
+	jar {
+		from("$buildDir/libs") {
+			include "AndroidLib.jar"
+		}
+	}
 	deploy {
 		baseName = name
 	}
 	dexJar {
-		options.minApi = '26'
-	}
-
-	run {
-//		if (true) throw new RuntimeException()
-		keepOtherMods
-//		setDataDefault()
-		dataDir = MdtDataDir
+		options.minApi = '31'
 	}
 }
 
-import arc.files.Fi;
+import arc.files.Fi
 
 task playGame(dependsOn: classes, type: JavaExec) {
 	dependsOn jar
 	doFirst {
 		def modFi = project.archivesBaseName + "-1.0.jar"
-//		def modFi = project.archivesBaseName + "-1.2.3.jar"
 		new Fi("" + buildDir).child("libs").child(modFi).copyTo(new Fi(MdtDataDir).child("mods")
 //				.child("test")
 				.child(project.archivesBaseName + "-1.2.4.jar"))
@@ -120,59 +94,50 @@ task playGame(dependsOn: classes, type: JavaExec) {
 	]
 }
 
-task ZComplieAll {
+task dexAdapter {
+	dependsOn jar
+
+	doLast {
+		def sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_HOME")
+
+		def platformRoot = new File("$sdkRoot/platforms/").listFiles().sort().reverse().find { f -> new File(f, "android.jar").exists() }
+
+		//collect dependencies needed for desugaring
+		def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")] + [new File("$buildDir/libs", "BetterJS-1.0.jar")]).collect { "--classpath $it.path" }.join(" ")
+
+		def d8 = new File("$sdkRoot/build-tools/").listFiles().find {
+			it.listFiles().any { it.name.contains("d8") }
+		}.listFiles().find { it.name.contains("d8") }
+		"$d8 $dependencies --min-api 14 --output AndroidLib.jar $buildDir/classes/java/main/better_js/myrhino/MyJavaAdapter.class"
+				.execute(null, new File("$rootDir/assets")).waitForProcessOutput(System.out, System.err)
+	}
+}
+task ZComplieAll(type: Jar)  {
+	dependsOn dexAdapter
 	dependsOn deploy
 }
 task playAndroid {
-	new Fi("${buildDir}/tmp/exit").mkdirs();
-	dependsOn deploy
-//    System.out.println("${project.archivesBaseName}-${VERSION}.jar");
-//    throw  new RuntimeException()
-	def MDT_ANDROID_DIR  = "/sdcard/Android/data/io.anuke.mindustry/files";
-	String adb = "F:/files/java/sdk/platform-tools/adb"
-	doLast {
-		"$adb push ${buildDir}/tmp/deploy/${project.archivesBaseName}-${VERSION}.jar ${MDT_ANDROID_DIR}/mods/"
-				.execute().waitForProcessOutput(System.out, System.err)
+	dependsOn ZComplieAll
+	def adb = "F:/files/java/sdk/platform-tools/adb";
+	doFirst {
 		"$adb shell am force-stop io.anuke.mindustry"
 				.execute().waitForProcessOutput(System.out, System.err)
+	}
+	def MDT_ANDROID_DIR = "/sdcard/Android/data/io.anuke.mindustry/files";
+	doLast {
+		("$adb push ${buildDir}/tmp/deploy/${project.archivesBaseName}-${VERSION}.jar"
+				+ " $MDT_ANDROID_DIR/mods/")
+				.execute().waitForProcessOutput(System.out, System.err)
 
-//		new Fi("${buildDir}/tmp/exit").deleteDirectory()
-		/*"$adb shell tail ${MDT_ANDROID_DIR}/last_log.txt"
-				.execute().waitForProcessOutput(System.out, System.err)*/
-		/*String MindustryLogPath = "${MDT_ANDROID_DIR}/last_log.txt"
-		new Fi("${project.rootDir}//appendLog.sh")
-		.writeString("""
-#!/bin/sh
-# MADE By BING
-# 获取文件的初始修改时间
-old_time=-1
-# 循环检查文件的修改时间
-while true; do
-  # 获取文件的当前修改时间
-  new_time=/$(stat -c %y ${MindustryLogPath})
-  # 如果修改时间发生变化
-  if [ "/$new_time" != "/$old_time" ]; then
-    # 将文件的内容追加到控制台
-    tail -f ${MindustryLogPath}
-    # 更新修改时间
-    old_time=/$new_time
-  fi
-  # 等待一段时间（秒）
-  sleep 0.02
-done""")
-		"$adb push ${project.rootDir}//appendLog.sh ${MDT_ANDROID_DIR}/appendLog.sh".execute()
-			.waitForProcessOutput(System.out, System.err)*/
 		"$adb shell am start -n io.anuke.mindustry/mindustry.android.AndroidLauncher -D -W "
 				.execute().waitForProcessOutput(System.out, System.err)
-		/*"$adb shell sh ${MDT_ANDROID_DIR}/appendLog.sh"
-						.execute().waitForProcessOutput(System.out, System.err)*/
 
-		/*while (true) {
-			"$adb pull ${MDT_ANDROID_DIR}/last_log.txt ${buildDir}/tmp/".execute()
-			.waitForProcessOutput(System.out, System.err)
-			Thread.sleep(100);
-//			if (new Fi("${buildDir}/tmp/exit").exists()) break;
-		}*/
+		"$adb push ${project.rootDir}/appendLog.sh ${MDT_ANDROID_DIR}/appendLog.sh"
+				.execute().waitForProcessOutput(System.out, System.err)
+		"$adb shell am start -n io.anuke.mindustry/mindustry.android.AndroidLauncher -D -W "
+				.execute().waitForProcessOutput(System.out, System.err)
+		"$adb shell sh ${MDT_ANDROID_DIR}/appendLog.sh"
+				.execute().waitForProcessOutput(System.out, System.err)
 	}
 }
 mindustryAssets {
@@ -183,9 +148,6 @@ mindustryAssets {
 test {
 	useJUnitPlatform()
 }
-
-
-
 
 
 tasks.withType(JavaCompile) {

@@ -4,8 +4,10 @@ import arc.files.Fi;
 import arc.func.Prov;
 import arc.struct.*;
 import arc.util.*;
+import better_js.*;
 import hope_android.FieldUtils;
 import jdk.internal.misc.Unsafe;
+import rhino.JavaAdapter;
 import rhino.classfile.ClassFileWriter;
 
 import java.lang.annotation.*;
@@ -13,7 +15,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.*;
 
-import static better_js.utils.MyReflect.unsafe;
+import static better_js.utils.MyReflect.*;
 import static rhino.classfile.ByteCode.*;
 import static rhino.classfile.ClassFileWriter.*;
 // import static org.objectweb.asm.Opcodes.*;

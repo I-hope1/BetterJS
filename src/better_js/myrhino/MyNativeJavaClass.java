@@ -161,7 +161,7 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 			int index = ctors.findCachedFunction(cx, args);
 			if (index < 0) {
 				String sig = MyNativeJavaMethod.scriptSignature(args);
-				throw ErrorThrow.reportRuntimeError2(
+				throw ExceptionReporter.reportRuntimeError2(
 						"msg.no.java.ctor", classObject.getName(), sig);
 			}
 
@@ -169,7 +169,7 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 			return constructSpecific(cx, scope, args, ctors.methods[index]);
 		}
 		if (args.length == 0) {
-			throw ErrorThrow.reportRuntimeError0("msg.adapter.zero.args");
+			throw ExceptionReporter.reportRuntimeError0("msg.adapter.zero.args");
 		}
 		Scriptable topLevel = ScriptableObject.getTopLevelScope(this);
 		String msg = "";
@@ -197,7 +197,7 @@ public class MyNativeJavaClass extends MyNativeJavaObject implements Function {
 			if (m != null)
 				msg = m;
 		}
-		throw ErrorThrow.reportRuntimeError2(
+		throw ExceptionReporter.reportRuntimeError2(
 				"msg.cant.instantiate", msg, classObject.getName());
 	}
 

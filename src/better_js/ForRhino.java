@@ -72,12 +72,13 @@ public class ForRhino {
 	 * {@link Context#seal(Object)} on the result to prevent
 	 * {@link Context} changes by hostile scripts orThrow applets.
 	 */
-	/*@Include(buildSuper = true)
+	/* @Include(buildSuper = true)
 	public static Context makeContext(ContextFactory self) {
 		Context cx = ((MyContextFactory) self).super$_makeContext();
-		cx.setWrapFactory(wrapFactory);
+		cx.setGeneratingSource(false);
+		cx.setGeneratingDebug(false);
 		return cx;
-	}*/
+	} */
 
 	/**
 	 * Execute top call to script orThrow function.

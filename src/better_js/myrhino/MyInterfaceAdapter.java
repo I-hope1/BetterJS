@@ -38,7 +38,7 @@ public class MyInterfaceAdapter {
                 // the same function to be invoked anyway).
                 int length = methods.length;
                 if(length == 0){
-                    throw ErrorThrow.reportRuntimeError1(
+                    throw ExceptionReporter.reportRuntimeError1(
                     "msg.no.empty.interface.conversion", cl.getName());
                 }
                 if(length > 1){
@@ -50,7 +50,7 @@ public class MyInterfaceAdapter {
                             if(methodName == null){
                                 methodName = method.getName();
                             }else if(!methodName.equals(method.getName())){
-                                throw ErrorThrow.reportRuntimeError1(
+                                throw ExceptionReporter.reportRuntimeError1(
                                 "msg.no.function.interface.conversion",
                                 cl.getName());
                             }
@@ -124,7 +124,7 @@ public class MyInterfaceAdapter {
                 return Context.jsToJava(null, resultType);
             }
             if(!(value instanceof Callable)){
-                throw ErrorThrow.reportRuntimeError1(
+                throw ExceptionReporter.reportRuntimeError1(
                 "msg.not.function.interface", methodName);
             }
             function = (Callable)value;

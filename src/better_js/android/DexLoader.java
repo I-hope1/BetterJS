@@ -18,7 +18,6 @@ import rhino.GeneratedClassLoader;
 import java.io.*;
 import java.lang.reflect.*;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static better_js.Main.unsafe;
 import static better_js.utils.Tools.or;
@@ -50,7 +49,7 @@ public class DexLoader {
 				DxContext context = new DxContext();
 				Time.mark();
 				dexFile.add(CfTranslator.translate(context, classFile, null, new CfOptions(), dexOptions, dexFile));
-				Dex dex    = new Dex(dexFile.toDex(null, false));
+				Dex dex = new Dex(dexFile.toDex(null, false));
 				/* Dex oldDex = getLastDex();
 				if (oldDex != null) {
 					dex = new DexMerger(new Dex[]{dex, oldDex}, CollisionPolicy.KEEP_FIRST, context).merge();
@@ -74,7 +73,7 @@ public class DexLoader {
 
 		@Override
 		public Class<?> loadClass(String name, boolean resolve)
-				throws ClassNotFoundException {
+		 throws ClassNotFoundException {
 			Class<?> loadedClass = findLoadedClass(name);
 			if (loadedClass == null) {
 				Dex dex = getLastDex();
@@ -146,18 +145,7 @@ public class DexLoader {
 			last = dex;
 			try {
 				ByteBuffer wrap = ByteBuffer.wrap(dex.getBytes());
-				Object dxFi = DexCons.getParameterCount() == 1 ? DexCons.newInstance(wrap) : DexCons.newInstance(new ByteBuffer[]{wrap},
-						getParent(), null);
-				ClassLoader dexLoader = or(() -> this.definingContext, Vars.class::getClassLoader);
-
-				Object pathList = unsafe.getObject(dexLoader, DexLoader.pathList);
-				Object els      = unsafe.getObject(pathList, dexElements);
-				int    len      = Array.getLength(els);
-				Object newCls   = Array.newInstance(ElementCl, len + 1);
-				System.arraycopy(els, 0, newCls, 0, len);
-				Array.set(newCls, len, ElementCons.newInstance(dxFi));
-				Log.info(Arrays.toString((Object[]) newCls));
-				unsafe.putObject(pathList, dexElements, newCls);
+				defineClassWithBytecode(wrap, definingContext, getParent());
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -183,11 +171,38 @@ public class DexLoader {
 			last = null;
 		}
 	}
+	public static void defineClassWithBytecode(ByteBuffer wrap, ClassLoader definingContext, ClassLoader defLoader)
+	 throws InstantiationException, IllegalAccessException, InvocationTargetException {
+		Object dxFi = DexByteCons.getParameterCount() == 1 ? DexByteCons.newInstance(wrap) : DexByteCons.newInstance(new ByteBuffer[]{wrap},
+		 defLoader, null);
+		ClassLoader dexLoader = or(() -> definingContext, Vars.class::getClassLoader);
+
+		Object pathList = unsafe.getObject(dexLoader, DexLoader.pathList);
+		Object els      = unsafe.getObject(pathList, dexElements);
+		int    len      = Array.getLength(els);
+		Object newCls   = Array.newInstance(ElementCl, len + 1);
+		System.arraycopy(els, 0, newCls, 0, len);
+		Array.set(newCls, len, ElementDexCons.newInstance(dxFi));
+		unsafe.putObject(pathList, dexElements, newCls);
+	}
+	public static void defineClassWithFile(File file, ClassLoader definingContext)
+	 throws InstantiationException, IllegalAccessException, InvocationTargetException {
+		Object dxFi = DexFileCons.newInstance(file);
+		ClassLoader dexLoader = or(() -> definingContext, Vars.class::getClassLoader);
+
+		Object pathList = unsafe.getObject(dexLoader, DexLoader.pathList);
+		Object arr      = unsafe.getObject(pathList, dexElements);
+		int    len      = Array.getLength(arr);
+		Object newArr   = Array.newInstance(ElementCl, len + 1);
+		System.arraycopy(arr, 0, newArr, 0, len);
+		Array.set(newArr, len, ElementDexCons.newInstance(dxFi));
+		unsafe.putObject(pathList, dexElements, newArr);
+	}
 
 
 	public static final long pathList, dexElements;
-	public static Constructor<?> DexCons;
-	public static final Constructor<?> ElementCons;
+	public static       Constructor<?> DexByteCons, DexFileCons;
+	public static final Constructor<?> ElementDexCons, ElementFileCons;
 
 	private static final Class<?> PathList, ElementCl;
 
@@ -202,14 +217,18 @@ public class DexLoader {
 			ElementCl = ElementArrCl.getComponentType();
 
 			try {
-				DexCons = dalvik.system.DexFile.class.getDeclaredConstructor(ByteBuffer[].class, ClassLoader.class, ElementArrCl);
+				DexByteCons = dalvik.system.DexFile.class.getDeclaredConstructor(ByteBuffer[].class, ClassLoader.class, ElementArrCl);
 			} catch (NoSuchMethodException e) {
-				DexCons = dalvik.system.DexFile.class.getDeclaredConstructor(ByteBuffer.class);
+				DexByteCons = dalvik.system.DexFile.class.getDeclaredConstructor(ByteBuffer.class);
 			}
-			DexCons.setAccessible(true);
+			DexByteCons.setAccessible(true);
+			DexFileCons = dalvik.system.DexFile.class.getDeclaredConstructor(File.class);
+			DexFileCons.setAccessible(true);
 
-			ElementCons = ElementCl.getDeclaredConstructor(dalvik.system.DexFile.class);
-			ElementCons.setAccessible(true);
+			ElementDexCons = ElementCl.getDeclaredConstructor(dalvik.system.DexFile.class);
+			ElementDexCons.setAccessible(true);
+			ElementFileCons = ElementCl.getDeclaredConstructor(dalvik.system.DexFile.class);
+			ElementFileCons.setAccessible(true);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
