@@ -1,0 +1,125 @@
+plugins {
+	id 'java'
+	id "io.github.liplum.mgpp" version "1.3.2"
+}
+/*pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+	kotlin.sourceSets.configureEach {
+		languageSettings.languageVersion = "2.0"
+	}
+}*/
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.reflect=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.vm.annotation=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.access=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.loader=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.platform=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.module=ALL-UNNAMED")
+	options.compilerArgs.addAll("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
+}
+
+group 'BetterJS'
+version '1.0'
+sourceSets.main.java.srcDirs = ["src"]
+
+dependencies {
+	annotationProcessor "com.github.EB-wilson.UniverseCore:annotations:$uncVersion"
+//	compileOnly files("E:/Program Files/AndroidStudio/sdk/build-tools/33.0.0-rc3/lib/d8.jar")
+
+	// 不知道为什么Anuken的dalvik-dx.jar不一样，这个jar是apk反编译的
+	compileOnly files("../libs/dalvik-dx.jar")//	compileOnly 'com.jakewharton.android.repackaged:dalvik-dx:9.0.0_r3'
+
+//	compileOnly files("F:/files/mindustry/a/mdt-ac-1.0.jar")
+	compileOnly files(
+			MdtDataDir + "/Mindustry_android.jar",
+//			"libs/mod-tools.jar",
+			"../libs/libs.jar",
+			"../libs/Android_dalvik-1.0.jar",
+	)
+	implementation files(
+			"E:/Users/ASUS/Desktop/Mods/TmpMods/AndroidField/AndroidField.jar",
+	)
+
+	compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+	compileOnly("com.github.Anuken.Mindustry:core:$mindustryVersion") {
+		exclude module: "flabel"
+	}
+
+	compileOnly project(":myrhino")
+}
+
+mindustry {
+	meta.version = VERSION
+	meta.name = meta.displayName = "better_js"
+	def name = project.parent.archivesBaseName
+	jar {
+		dependsOn project(":myrhino").getTasksByName("deploy", false)
+		from("${project(":myrhino").buildDir}/tmp/deploy") {
+			include "rhino.jar"
+		}
+		archiveFileName = "${name}.jar"
+	}
+	deploy {
+		baseName = name
+	}
+	dexJar {
+		options.minApi = minApi
+	}
+}
+mindustryAssets {
+	// Set the assets root
+	rootAt "$parent.projectDir/assets"
+}
+
+import arc.files.Fi
+
+task copyJarToGame {
+	dependsOn jar
+	doLast {
+		def modFi = project.archivesBaseName + "-1.0.jar"
+		new Fi("" + buildDir).child("libs").child(modFi).copyTo(new Fi(MdtDataDir).child("mods")
+//				.child("test")
+				.child(project.archivesBaseName + "-1.2.4.jar"))
+	}
+}
+
+task dexAdapter {
+	dependsOn jar
+
+	doLast {
+		def sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_HOME")
+		def platformRoot = new File("$sdkRoot/platforms").listFiles().sort().reverse().find { f -> new File(f, "android.jar").exists() }
+
+		def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")]).collect { "--classpath \"$it.path\"" }.join(" ")
+		//collect dependencies needed for desugaring
+
+		System.out.println("build android dex...")
+		def d8 = new File("$sdkRoot/build-tools/").listFiles().find {
+			it.listFiles().any {it.name.contains("d8") } && Integer.valueOf(it.name.substring(0, 2)) >= minApi
+		}.listFiles().find { it.name.contains("d8") }
+		"$d8 $dependencies --min-api 14 --output AndroidJavaAdapterLib.jar $buildDir/classes/java/main/better_js/myrhino/MyJavaAdapter.class"
+				.execute(null, new File("$rootDir/assets")).waitForProcessOutput(System.out, System.err)
+//		"$d8 $dependencies --min-api 14 --output rhino-android.jar $rootDir/assets/libs/rhino.jar"
+//				.execute(null, new File("$rootDir/assets")).waitForProcessOutput(System.out, System.err)
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+
+/*compileKotlin {
+	kotlinOptions {
+		jvmTarget = "11"
+		freeCompilerArgs = ["-Xcontext-receivers"]
+	}
+}
+compileTestKotlin {
+	kotlinOptions {
+		jvmTarget = "1.8"
+	}
+}*/

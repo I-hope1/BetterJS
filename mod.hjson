@@ -6,7 +6,6 @@ description: '''
 修复移动端staticOffset bug
 兼容java17
 '''
-hidden: true
 main: "better_js.Main"
 author: "I hope..."
 version: "1.2.3"

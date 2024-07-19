@@ -1,0 +1,40 @@
+plugins {
+	id "java"
+	id "io.github.liplum.mgpp"
+}
+
+jar {
+	archiveFileName = "rhino.jar"
+}
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+	options.compilerArgs.addAll("--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")
+}
+
+sourceSets.main.java.srcDirs = ["src"]
+group 'org.example'
+version '1.0'
+
+mindustry {
+	meta.version = ""
+	meta.name = meta.displayName = "rhino"
+	deploy {
+		baseName = "rhino"
+	}
+	dexJar {
+		options.minApi = minApi
+	}
+}
+dependencies {
+	annotationProcessor "com.github.EB-wilson.UniverseCore:annotations:$uncVersion"
+
+	compileOnly files("classfile.jar")
+//    def mindustryVersion = 'v145.1'
+    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+	compileOnly files("E:/Users/ASUS/Desktop/Mods/Android_dalvik-1.0.jar")
+//    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
+}
+
+test {
+	useJUnitPlatform()
+}
